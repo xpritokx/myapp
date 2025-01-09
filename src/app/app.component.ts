@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 import { Store } from '@ngrx/store';
+import { DeviceDetectorService } from 'ngx-device-detector';
 import { Component, inject } from '@angular/core';
 import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -28,6 +29,9 @@ import { selectLogoutButton } from './selectors/buttons.selectors';
             <span>Orders</span>
           </button>
           <button mat-menu-item>
+            <span>Quotes</span>
+          </button>
+          <button mat-menu-item>
             <span>Shipping</span>
           </button>
           <button mat-menu-item>
@@ -46,7 +50,7 @@ import { selectLogoutButton } from './selectors/buttons.selectors';
       <section class="content">
         <router-outlet></router-outlet>
       </section>
-      <section class="footer">
+      <section *ngIf="!deviceDetectorService.isMobile()" class="footer">
         <p>© Copyright 2025 Stair Shoppe</p>
       </section>
     </main>
@@ -57,7 +61,8 @@ export class AppComponent {
   private readonly store = inject(Store);
   private readonly tokenService = inject(TokenService);
   private readonly configService = inject(ConfigService);
-  
+  public readonly deviceDetectorService = inject(DeviceDetectorService);
+
   logoutButton$: Observable<boolean>;
 
   constructor(

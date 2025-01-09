@@ -1,45 +1,48 @@
-import { Component, inject, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, inject, ViewChild } from '@angular/core';
 // import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-// import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { OrdersService } from '../../services/orders.service';
 import { IOrder } from '../../interfaces/order.interface';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { Sort, MatSort, MatSortModule } from '@angular/material/sort';
+import { PageEvent, MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { DeleteOrderDialogComponent } from './delete/delete-order.component';
 import { EditOrderDialogComponent } from './edit/edit-order.component';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-auth',
   imports: [
+    CommonModule,
     MatTableModule,
     MatDialogModule,
     MatIconModule,
     MatButtonModule,
     MatPaginatorModule,
     MatSortModule,
+    MatProgressSpinnerModule,
   ],
   template: `
     <section class="orders-section">
-        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8 table-content" matSort>
-            <ng-container matColumnDef="ID">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header> ID </th>
-                <td mat-cell *matCellDef="let element"> {{element.ID}} </td>
-            </ng-container>
+        <table *ngIf="!isLoading" mat-table [dataSource]="dataSource" class="mat-elevation-z8 table-content" (matSortChange)="sortData($event)" matSort>
             <ng-container matColumnDef="OrderNum">
-                <th mat-header-cell *matHeaderCellDef> Order Num </th>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Order Num </th>
                 <td mat-cell *matCellDef="let element"> {{element.OrderNum}} </td>
+            </ng-container>
+            <ng-container matColumnDef="OrderDate">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Order Date </th>
+                <td mat-cell *matCellDef="let element"> {{element.OrderDate}} </td>
+            </ng-container>
+            <ng-container matColumnDef="DeliveryDate">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Delivery Date </th>
+                <td mat-cell *matCellDef="let element"> {{element.DeliveryDate}} </td>
             </ng-container>
             <ng-container matColumnDef="Customer">
                 <th mat-header-cell *matHeaderCellDef> Customer </th>
                 <td mat-cell *matCellDef="let element"> {{element.Customer}} </td>
-            </ng-container>
-            <ng-container matColumnDef="BillingAddress">
-                <th mat-header-cell *matHeaderCellDef> Billing Address </th>
-                <td mat-cell *matCellDef="let element"> {{element.BillingAddress}} </td>
             </ng-container>
             <ng-container matColumnDef="Address">
                 <th mat-header-cell *matHeaderCellDef> Address </th>
@@ -49,26 +52,50 @@ import { EditOrderDialogComponent } from './edit/edit-order.component';
                 <th mat-header-cell *matHeaderCellDef> Model </th>
                 <td mat-cell *matCellDef="let element"> {{element.Model}} </td>
             </ng-container>
+            <ng-container matColumnDef="JobNum">
+                <th mat-header-cell *matHeaderCellDef> Job # </th>
+                <td mat-cell *matCellDef="let element"> {{element.JobNum}} </td>
+            </ng-container>
+            <ng-container matColumnDef="PONum">
+                <th mat-header-cell *matHeaderCellDef> PO # </th>
+                <td mat-cell *matCellDef="let element"> {{element.PONum}} </td>
+            </ng-container>
+            
+            <ng-container matColumnDef="Status">
+                <th mat-header-cell *matHeaderCellDef> Status </th>
+                <td mat-cell *matCellDef="let element"> {{element.Status}} </td>
+            </ng-container>
+            
+            <ng-container matColumnDef="ShipDate">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Shipped Date </th>
+                <td mat-cell *matCellDef="let element"> {{element.ShipDate}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="WorkorderComments">
+                <th mat-header-cell *matHeaderCellDef> Comment </th>
+                <td mat-cell *matCellDef="let element"> {{element.WorkorderComments}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="InputBy">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Input By </th>
+                <td mat-cell *matCellDef="let element"> {{element.InputBy}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="OfficeNote">
+                <th mat-header-cell *matHeaderCellDef> Office Note </th>
+                <td mat-cell *matCellDef="let element"> {{element.OfficeNote}} </td>
+            </ng-container>
+
             <ng-container matColumnDef="StairsNum">
-                <th mat-header-cell *matHeaderCellDef> Stairs Num </th>
+                <th mat-header-cell *matHeaderCellDef> # Stairs </th>
                 <td mat-cell *matCellDef="let element"> {{element.StairsNum}} </td>
             </ng-container>
-            <ng-container matColumnDef="OrderDate">
-                <th mat-header-cell *matHeaderCellDef> Order Date </th>
-                <td mat-cell *matCellDef="let element"> {{element.OrderDate}} </td>
+
+            <ng-container matColumnDef="Custom">
+                <th mat-header-cell *matHeaderCellDef> Custom </th>
+                <td mat-cell *matCellDef="let element"> {{element.Custom}} </td>
             </ng-container>
-            <ng-container matColumnDef="DeliveryDate">
-                <th mat-header-cell *matHeaderCellDef> Delivery Date </th>
-                <td mat-cell *matCellDef="let element"> {{element.DeliveryDate}} </td>
-            </ng-container>
-            <ng-container matColumnDef="Height">
-                <th mat-header-cell *matHeaderCellDef> Height </th>
-                <td mat-cell *matCellDef="let element"> {{element.Height}} </td>
-            </ng-container>
-            <ng-container matColumnDef="Width">
-                <th mat-header-cell *matHeaderCellDef> Width </th>
-                <td mat-cell *matCellDef="let element"> {{element.Width}} </td>
-            </ng-container>
+
             <ng-container matColumnDef="ActionButtons" stickyEnd>
                 <th mat-header-cell *matHeaderCellDef></th>
                 <td mat-cell *matCellDef="let element">
@@ -90,8 +117,21 @@ import { EditOrderDialogComponent } from './edit/edit-order.component';
             <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
+        <div *ngIf="isLoading" class="spinning-loader" style="display: flex; justify-content: center; align-items: center; background: white;">
+            <mat-progress-spinner
+                color="primary" 
+                mode="indeterminate">
+            </mat-progress-spinner>
+        </div>
     </section>
-    <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]" aria-label="Select page of orders"></mat-paginator>
+    <button class="filter-btn" (click)="filter()" mat-mini-fab>
+        <mat-icon>filter_alt</mat-icon>
+    </button>
+    <mat-paginator 
+        [pageSizeOptions]="[25, 50, 75, 100]"
+        [length]="total"
+        (page)="handlePageEvent($event)"
+    ></mat-paginator>
   `,
   styleUrls: ['./orders.component.scss'],
 })
@@ -100,35 +140,58 @@ export class OrdersComponent {
     ordersService = inject(OrdersService);
 
     displayedColumns: string[] = [
-        'ID',
         'OrderNum',
-        'Customer',
-        'BillingAddress',
-        'Address',
-        'Model',
-        'StairsNum',
         'OrderDate',
         'DeliveryDate',
-        'Height',
-        'Width',
+        'Customer',
+        'Address',
+        'Model',
+        'JobNum',
+        'PONum',
+        'Status',
+        'ShipDate',
+        'WorkorderComments',
+        'InputBy',
+        'OfficeNote',
+        'StairsNum',
+        'Custom',
         'ActionButtons',
     ];
 
     dataSource!: MatTableDataSource<IOrder>;
-    ordersList: IOrder[] = [];
-    
+    total: number = 0;
+    isLoading: boolean = false;
+
     @ViewChild(MatPaginator)
     paginator!: MatPaginator;
     @ViewChild(MatSort)
     sort!: MatSort;
+
+    pageSize: number = 25;
+    pageIndex: number = 0;
+    sortingDirection: string = 'desc'; 
+    sortingColumn: string = 'OrderDate';
 
     constructor() {
         this.getOrders();
     }
 
     async getOrders() {
-        const ordersList = await this.ordersService.getOrders();
-        this.dataSource = new MatTableDataSource(ordersList);
+        this.isLoading = true;
+        const orders: {
+            data: IOrder[];
+            total: number;
+        } = await this.ordersService.getOrders(
+            this.pageSize,
+            this.pageIndex,
+            this.sortingColumn,
+            this.sortingDirection,
+        );
+
+        this.isLoading = false;
+        this.total = orders.total;
+        
+        this.dataSource = new MatTableDataSource(orders.data);
     }
 
     openEditDialog(order: IOrder) {
@@ -160,12 +223,29 @@ export class OrdersComponent {
         });
     }
 
-    /* applyFilter(event: Event) {
-        const filterValue = (event.target as HTMLInputElement).value;
-        this.dataSource.filter = filterValue.trim().toLowerCase();
-    
-        if (this.dataSource.paginator) {
-          this.dataSource.paginator.firstPage();
+    handlePageEvent(e: PageEvent) {
+        console.log('--DEBUG-- handlePageEvent: ', e);
+        this.pageSize = e.pageSize;
+        this.pageIndex = e.pageIndex;
+
+        this.getOrders();
+    }
+
+    sortData(sort: Sort) {
+        console.log('--DEBUG-- sort button: ', sort);
+
+        if (this.sortingColumn == sort.active) {
+            this.sortingDirection = this.sortingDirection == 'asc' ? 'desc' : 'asc';
+        } else {
+            this.sortingDirection = 'asc';
         }
-    } */
+
+        this.sortingColumn = sort.active;
+
+        this.getOrders();
+    };
+
+    filter() {
+        console.log('--DEBUG-- filter!');
+    }
 }

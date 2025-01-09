@@ -14,17 +14,25 @@
     margin: 8px 8px 8px 0;
 }
 
-/* .mat-mdc-table {
-    width: 100%;
-    max-height: 400px;
-    overflow: auto;
-} */
-
 .orders-section {
     height: 750px;
     overflow: auto;
 }
 
+.spinning-loader {
+    margin-top: 350px;
+}
+
 .mat-mdc-table-sticky-border-elem-right {
     border-left: 1px solid #e0e0e0;
+}
+
+::ng-deep .mat-sort-header-arrow {
+    display: none;
+}
+
+.filter-btn {
+    left: 200px;
+    top: 10px;
+    position: absolute;
 }

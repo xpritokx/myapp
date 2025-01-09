@@ -24,8 +24,8 @@ import { IOrder } from '../../../interfaces/order.interface';
                     </mat-form-field>
 
                     <mat-form-field class="order-billing-address">
-                        <mat-label for="billindAddress">Billing Address</mat-label>
-                        <input id="billindAddress" matInput type="text" formControlName="billindAddress" placeholder="Ex. 27230" />
+                        <mat-label for="billingAddress">Billing Address</mat-label>
+                        <input id="billingAddress" matInput type="text" formControlName="billingAddress" placeholder="Ex. 27230" />
                     </mat-form-field>
 
                     <mat-form-field class="order-customer">
@@ -84,7 +84,7 @@ export class EditOrderDialogComponent {
     editOrderForm = new FormGroup({
         number: new FormControl(0),
         customer: new FormControl(0),
-        billindAddress: new FormControl(''),
+        billingAddress: new FormControl(''),
         address: new FormControl(''),
         model: new FormControl(0),
         stairsNum: new FormControl(0),
@@ -98,7 +98,7 @@ export class EditOrderDialogComponent {
         this.editOrderForm = new FormGroup({
             number: new FormControl(data.OrderNum),
             customer: new FormControl(data.Customer),
-            billindAddress: new FormControl(data.BillindAddress),
+            billingAddress: new FormControl(data.BillingAddress),
             address: new FormControl(data.Address),
             model: new FormControl(data.Model),
             stairsNum: new FormControl(data.StairsNum),

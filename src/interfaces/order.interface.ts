@@ -2,7 +2,7 @@ export interface IOrder {
     ID: number;
     OrderNum: number;
     Customer: number;
-    BillindAddress: string;
+    BillingAddress: string;
     Address: string;
     Model: number;
     StairsNum: number;

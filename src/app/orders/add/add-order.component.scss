@@ -1,27 +1,16 @@
-.date-created {
-    margin-left: 25px;
-    margin-top: -15px;
-    font-size: 12px;
-    color: gray;
-}
-
 .full-width {
     width: 100%;
+    min-width: 320px;
 }
 
-.list-orders {
-    overflow: auto;
+.create-orders-form {
+    max-width: 430px;
 }
 
-.table-content {
-    cursor: pointer;
-}
-
-.edit-order-delete-btn {
-    right: 20px;
-    top: 20px;
+.create-order-quote {
     position: absolute;
-    background-color: rgb(211, 107, 99);
+    left: 150px;
+    top: 18px;
 }
 
 mat-dialog-container {

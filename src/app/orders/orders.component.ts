@@ -1,17 +1,22 @@
 import { Component, inject, ViewChild } from '@angular/core';
-// import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { OrdersService } from '../../services/orders.service';
-import { IOrder } from '../../interfaces/order.interface';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Sort, MatSort, MatSortModule } from '@angular/material/sort';
 import { PageEvent, MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { DeleteOrderDialogComponent } from './delete/delete-order.component';
+import { DeviceDetectorService } from 'ngx-device-detector';
+
+import { OrdersService } from '../../services/orders.service';
+
+import { IOrder } from '../../interfaces/order.interface';
+
+import { DeleteOrderDialogComponent } from './delete-order/delete-order.component';
+import { AddOrderDialogComponent } from './add/add-order.component';
 import { EditOrderDialogComponent } from './edit/edit-order.component';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
 
 @Component({
   selector: 'app-auth',
@@ -23,7 +28,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatButtonModule,
     MatPaginatorModule,
     MatSortModule,
-    MatProgressSpinnerModule,
+    MatProgressSpinnerModule
   ],
   template: `
     <section class="orders-section">
@@ -63,7 +68,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
             
             <ng-container matColumnDef="Status">
                 <th mat-header-cell *matHeaderCellDef> Status </th>
-                <td mat-cell *matCellDef="let element"> {{element.Status}} </td>
+                <td mat-cell *matCellDef="let element"> {{element.ShipStatus}} </td>
             </ng-container>
             
             <ng-container matColumnDef="ShipDate">
@@ -83,7 +88,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
             <ng-container matColumnDef="OfficeNote">
                 <th mat-header-cell *matHeaderCellDef> Office Note </th>
-                <td mat-cell *matCellDef="let element"> {{element.OfficeNote}} </td>
+                <td mat-cell *matCellDef="let element"> {{element.PublicComment}} </td>
             </ng-container>
 
             <ng-container matColumnDef="StairsNum">
@@ -91,12 +96,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
                 <td mat-cell *matCellDef="let element"> {{element.StairsNum}} </td>
             </ng-container>
 
-            <ng-container matColumnDef="Custom">
+            <ng-container matColumnDef="CustomDelivery">
                 <th mat-header-cell *matHeaderCellDef> Custom </th>
-                <td mat-cell *matCellDef="let element"> {{element.Custom}} </td>
+                <td mat-cell *matCellDef="let element"> {{element.CustomDelivery}} </td>
             </ng-container>
 
-            <ng-container matColumnDef="ActionButtons" stickyEnd>
+            <!-- <ng-container matColumnDef="ActionButtons" stickyEnd>
                 <th mat-header-cell *matHeaderCellDef></th>
                 <td mat-cell *matCellDef="let element">
                 <div class="button-row">
@@ -112,10 +117,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
                     </div>
                 </div>
                 </td>
-            </ng-container>
+            </ng-container> -->
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            <tr (click) = "openEditDialog(row)" mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
         <div *ngIf="isLoading" class="spinning-loader" style="display: flex; justify-content: center; align-items: center; background: white;">
             <mat-progress-spinner
@@ -124,9 +129,34 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
             </mat-progress-spinner>
         </div>
     </section>
-    <button class="filter-btn" (click)="filter()" mat-mini-fab>
+
+    <!-- buttons fot mobile version -->
+    <button class="add-new-btn-mobile" *ngIf="deviceDetectorService.isMobile()" (click)="add()" mat-mini-fab>
+        <mat-icon>add</mat-icon>
+    </button>
+    <button class="filter-btn-mobile" *ngIf="deviceDetectorService.isMobile()" ngClass="{{ searchParamsEnabled ? 'search-params-enabled' : '' }}" (click)="filter()" mat-mini-fab>
         <mat-icon>filter_alt</mat-icon>
     </button>
+    <button class="filter-btn-off-mobile" *ngIf="searchParamsEnabled && deviceDetectorService.isMobile()" (click)="filterOff()" mat-mini-fab>
+        <mat-icon>filter_alt_off</mat-icon>
+    </button>
+    <!-- buttons fot mobile version -->
+
+    <!-- buttons fot desktop version -->
+    <button class="add-new-btn" *ngIf="!deviceDetectorService.isMobile()" (click)="add()" mat-mini-fab>
+        <mat-icon>add</mat-icon>
+    </button>
+    <button class="filter-btn" *ngIf="!deviceDetectorService.isMobile()" ngClass="{{ searchParamsEnabled ? 'search-params-enabled' : '' }}" (click)="filter()" mat-mini-fab>
+        <mat-icon>filter_alt</mat-icon>
+    </button>
+    <button class="filter-btn-off" *ngIf="searchParamsEnabled && !deviceDetectorService.isMobile()" (click)="filterOff()" mat-mini-fab>
+        <mat-icon>filter_alt_off</mat-icon>
+    </button>
+    <div *ngIf="searchParamsEnabled && !deviceDetectorService.isMobile()" class="filter-container">
+        <p *ngIf="searchParams.searchField && searchParams.searchField !== 'not-selected'">{{mockDate[searchParams.searchField]}} = {{searchParams.search}}</p>
+        <p *ngIf="searchParams.searchDateField && searchParams.searchDateField !== 'not-selected'">{{mockDate[searchParams.searchDateField]}} from {{searchParams.dateFrom}} to {{searchParams.dateTo}}</p>
+    </div>
+    <!-- buttons fot desktop version -->
     <mat-paginator 
         [pageSizeOptions]="[25, 50, 75, 100]"
         [length]="total"
@@ -137,7 +167,17 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 })
 export class OrdersComponent {
     readonly dialog = inject(MatDialog);
+    public readonly deviceDetectorService = inject(DeviceDetectorService);
     ordersService = inject(OrdersService);
+
+    searchParams = {
+        search: '',
+        searchField: '',
+        dateFrom: '',
+        dateTo: '',
+        searchDateField: ''
+    };
+    searchParamsEnabled:boolean = false;
 
     displayedColumns: string[] = [
         'OrderNum',
@@ -154,9 +194,26 @@ export class OrdersComponent {
         'InputBy',
         'OfficeNote',
         'StairsNum',
-        'Custom',
-        'ActionButtons',
+        'CustomDelivery',
+        // 'ActionButtons',
     ];
+
+    mockDate: any = {
+        ShipDate: 'Shipping date',
+        DeliveryDate: 'Delivery date',
+        OrderDate: 'Order Date',
+        OrderNum: 'Order Num',
+        Customer: 'Customer',
+        Address: 'Address',
+        Model: 'Model',
+        JobNum: 'Job',
+        PONum: 'PO#',
+        Status: 'ShipStatus',
+        Comment: 'WorkorderComments',
+        InputBy: 'Input By',
+        OfficeNote: 'PublicComment',
+        Custom: 'Custom Delivery'
+    }
 
     dataSource!: MatTableDataSource<IOrder>;
     total: number = 0;
@@ -181,16 +238,17 @@ export class OrdersComponent {
         const orders: {
             data: IOrder[];
             total: number;
-        } = await this.ordersService.getOrders(
+        } = await this.ordersService.getOrdersList(
             this.pageSize,
             this.pageIndex,
             this.sortingColumn,
             this.sortingDirection,
+            this.searchParams
         );
 
         this.isLoading = false;
         this.total = orders.total;
-        
+
         this.dataSource = new MatTableDataSource(orders.data);
     }
 
@@ -245,7 +303,56 @@ export class OrdersComponent {
         this.getOrders();
     };
 
+    add() {
+        console.log('--DEBUG-- add dialog opened!');
+
+        const dialogRef = this.dialog.open(AddOrderDialogComponent);
+
+        dialogRef.afterClosed().subscribe(result => {
+            console.log(`--DEBUG-- add dialog result:`, result);
+
+            if (result?.status) {
+                this.getOrders();
+
+            }
+        });
+    }
+
     filter() {
-        console.log('--DEBUG-- filter!');
+        console.log('--DEBUG-- filter dialog opened!');
+
+        const dialogRef = this.dialog.open(FilterOrdersDialogComponent);
+
+        dialogRef.afterClosed().subscribe(result => {
+            console.log(`--DEBUG-- filter dialog result:`, result);
+
+            if ((!result.searchDateField && !result.searchField) ||
+                result.searchDateField === 'not-selected' &&
+                result.searchField === 'not-selected'
+            ) {
+                return;
+            }
+
+            this.searchParamsEnabled = true;
+            this.searchParams = result;
+
+            this.getOrders();
+        });
+    }
+
+    filterOff() {
+        console.log('--DEBUG-- filters off');
+
+        this.searchParams = {
+            search: '',
+            searchField: '',
+            dateFrom: '',
+            dateTo: '',
+            searchDateField: ''
+        };
+
+        this.searchParamsEnabled = false;
+
+        this.getOrders();
     }
 }

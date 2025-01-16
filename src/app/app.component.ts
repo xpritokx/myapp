@@ -14,14 +14,24 @@ import { logoutButtonDisable, logoutButtonEnable } from '../actions/buttons.acti
 import { selectLogoutButton } from './selectors/buttons.selectors';
 @Component({
   selector: 'app-root',
-  imports: [RouterModule, CommonModule, MatButtonModule, MatMenuModule, MatIconModule],
+  imports: [
+    RouterModule, 
+    CommonModule, 
+    MatButtonModule, 
+    MatMenuModule, 
+    MatIconModule
+  ],
   template: `
     <main>
       <header class="brand-name">
         <a (click)="goToHome()">
-          <img class="brand-logo" src="https://www.thestairshoppe.ca/images/logo1.png" alt="logo" aria-hidden="true" />
+          <img *ngIf="!deviceDetectorService.isMobile()" class="brand-logo" src="https://www.thestairshoppe.ca/images/logo1.png" alt="logo" aria-hidden="true" />
+          <img *ngIf="deviceDetectorService.isMobile()" class="brand-logo-mobile" src="https://www.thestairshoppe.ca/images/logo1.png" alt="logo" aria-hidden="true">
         </a>
-        <button *ngIf="logoutButton$ | async"  mat-icon-button class="menu-button" [matMenuTriggerFor]="menu">
+        <button *ngIf="(logoutButton$ | async) && !deviceDetectorService.isMobile()"  mat-icon-button class="menu-button" [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+        </button>
+        <button *ngIf="(logoutButton$ | async) && deviceDetectorService.isMobile()"  mat-icon-button class="menu-button-mobile" [matMenuTriggerFor]="menu">
             <mat-icon>more_vert</mat-icon>
         </button>
         <mat-menu #menu="matMenu">

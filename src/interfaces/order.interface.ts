@@ -12,3 +12,15 @@ export interface IOrder {
     Width: number;
     HeadroomMatters: number;
 }
+
+export interface IOrderSearchParams {
+    search: string,
+    searchField: string,
+    dateFrom: string,
+    dateTo: string,
+    searchDateField: string
+}
+
+export interface IOrderCreate {
+    
+}

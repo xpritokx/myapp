@@ -1,0 +1,243 @@
+<h2 mat-dialog-title>Order #{{data.OrderNum}} {{data.SectionType}} # {{data.Stair}}</h2>
+<p *ngIf="data.SectionType === 'Winder'" class="blurb">{{ data.blurb_winder }}</p>
+
+<mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" mat-align-tabs="center">
+    <mat-tab label="Staircases">
+        <section class="staircases">
+            <form class="form-order-details" [formGroup]="orderDetailsForm">
+                <div *ngIf="data.Image">
+                    <img src="{{data.Image}}" />
+                </div>
+                <mat-form-field class="order-details-location details-width">    
+                    <mat-label for="location">Location</mat-label>
+                    <input id="location" matInput type="text" formControlName="location" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Landing'" class="order-details-location details-width">    
+                    <mat-label for="sectionDesc">Landing Type</mat-label>
+                    <input id="sectionDesc" matInput type="text" formControlName="sectionDesc" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-length">
+                    <mat-label for="length">Length</mat-label>
+                    <input id="length" matInput type="text" formControlName="length" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-height">
+                    <mat-label for="height">Height</mat-label>
+                    <input id="height" [disabled]="true" matInput type="text" formControlName="height" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-width">
+                    <mat-label for="width">Width</mat-label>
+                    <input id="width" matInput type="text" formControlName="width" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-run">
+                    <mat-label for="run">Run</mat-label>
+                    <input id="run" matInput type="text" formControlName="run" placeholder="Ex. 27230" />
+                </mat-form-field>
+                
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-rise">
+                    <mat-label for="rise">Rise</mat-label>
+                    <input id="rise" matInput type="text" formControlName="rise" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Winder'" class="order-details-rise">
+                    <mat-label for="winderRise">Winder Rise</mat-label>
+                    <input id="winderRise" matInput type="text" formControlName="winderRise" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Landing'" class="order-details-rise-count">
+                    <mat-label for="riseCount"># of Rises</mat-label>
+                    <input id="riseCount" matInput type="text" formControlName="riseCount" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Landing'" class="order-details-style">
+                    <mat-label for="stairStyle">Stair Style</mat-label>
+                    <input id="stairStyle" matInput type="text" formControlName="stairStyle" placeholder="Ex. Standart, Carriage, PocketRoute" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Winder'" class="order-details-type">
+                    <mat-label for="sectionDesc">Winder Type</mat-label>
+                    <input id="sectionDesc" matInput type="text" formControlName="sectionDesc" placeholder="Ex. 1'Ply" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-type">
+                    <mat-label for="stairType">Stair Type</mat-label>
+                    <input id="stairType" matInput type="text" formControlName="stairType" placeholder="Ex. 1'Ply" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Landing'" class="order-details-riser-type">
+                    <mat-label for="riserType">Riser Type</mat-label>
+                    <input id="riserType" matInput type="text" formControlName="riserType" placeholder="Ex. Closed, Open, Semi-Closed" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-method">
+                    <mat-label for="method">Method</mat-label>
+                    <input id="method" matInput type="text" formControlName="method" placeholder="Ex. A, B, C" />
+                </mat-form-field>
+
+                <div *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'">
+                    <mat-checkbox id="notch" class="order-details-notch" color="primary"
+                    formControlName="notch">Notch</mat-checkbox>
+                    <mat-checkbox id="headroomMatters" class="order-details-headroom-matters" color="primary"
+                    formControlName="headroomMatters">Headroom Matters</mat-checkbox>
+                    <mat-checkbox id="offTheTop" class="order-details-off-the-top" color="primary"
+                    formControlName="offTheTop">Off The Top</mat-checkbox>
+                </div>
+                <div *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'">
+                    <mat-checkbox id="noNosing" class="order-details-no-nosing" color="primary"
+                    formControlName="noNosing">No Nosing</mat-checkbox>
+                    <mat-checkbox id="furred" class="order-details-furred" color="primary"
+                    formControlName="furred">3rd and Furred</mat-checkbox>
+                </div>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-materials details-width">
+                    <mat-label for="materials">Materials</mat-label>
+                    <input id="materials" matInput type="text" formControlName="materials" placeholder="Ex. plywood, spruce stingers" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-materials">
+                    <mat-label for="stringerStyle1">Stringer Style 1</mat-label>
+                    <input id="stringerStyle1" matInput type="text" formControlName="stringerStyle1" placeholder="Ex. plywood, spruce stingers" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-materials">
+                    <mat-label for="stringerStyle2">Stringer Style 2</mat-label>
+                    <input id="stringerStyle2" matInput type="text" formControlName="stringerStyle2" placeholder="Ex. plywood, spruce stingers" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-divisor">
+                    <mat-label for="divisor">Divisor</mat-label>
+                    <input id="divisor" matInput type="text" formControlName="divisor" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Winder'" class="order-details-divisor">
+                    <mat-label for="winderPickup">Pickup</mat-label>
+                    <input id="winderPickup" matInput type="text" formControlName="winderPickup" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Winder'" class="order-details-divisor">
+                    <mat-label for="winderOn1">on #1</mat-label>
+                    <input id="winderOn1" matInput type="text" formControlName="winderOn1" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Winder'" class="order-details-divisor">
+                    <mat-label for="winderOn3">on #3</mat-label>
+                    <input id="winderOn3" matInput type="text" formControlName="winderOn3" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Winder'" class="order-details-divisor">
+                    <mat-label for="winderWrap">Wrap</mat-label>
+                    <input id="winderWrap" matInput type="text" formControlName="winderWrap" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Winder'" class="order-details-divisor">
+                    <mat-label for="winderCutCorner">Cut Corner</mat-label>
+                    <input id="winderCutCorner" matInput type="text" formControlName="winderCutCorner" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Landing'" class="order-details-landing-pickup">
+                    <mat-label for="landingPickup">Pickup</mat-label>
+                    <input id="landingPickup" matInput type="text" formControlName="landingPickup" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Landing'" class="order-details-landing-wrap">
+                    <mat-label for="landingWrap">Wrap +1"Nosing</mat-label>
+                    <input id="landingWrap" matInput type="text" formControlName="landingWrap" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Landing'" class="order-details-landing-seat">
+                    <mat-label for="landingSeat">Seat</mat-label>
+                    <input id="landingSeat" matInput type="text" formControlName="landingSeat" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Landing'" class="order-details-landing-pickup-osm">
+                    <mat-label for="landingPickupOSM">OSM on Pickup</mat-label>
+                    <input id="landingPickupOSM" matInput type="text" formControlName="landingPickupOSM" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="data.SectionType === 'Landing'" class="order-details-landing-wrap-osm">
+                    <mat-label for="landingWrapOSM">OSM on Wrap</mat-label>
+                    <input id="landingWrapOSM" matInput type="text" formControlName="landingWrapOSM" placeholder="Ex. 0" />
+                </mat-form-field>
+
+                <div *ngIf="data.SectionType === 'Landing'">
+                    <mat-checkbox id="langingOnFloor" class="order-details-landing-seat-on-floor" color="primary"
+                        formControlName="langingOnFloor">Landing sits on floor</mat-checkbox>
+                </div>
+
+                <div *ngIf="data.SectionType === 'Winder'">
+                    <mat-checkbox id="winderSeat" class="order-details-winder-seat" color="primary"
+                        formControlName="winderSeat">Seat</mat-checkbox>
+                    <mat-form-field class="order-details-winder-seat-length">
+                        <mat-label for="winderSeatLength">Seat Length</mat-label>
+                        <input id="winderSeatLength" matInput type="text" formControlName="winderSeatLength" placeholder="Ex. 0" />
+                    </mat-form-field>
+                </div>
+            </form>
+        </section>
+    </mat-tab>
+    <mat-tab label="Connected Stairs">
+        <section class="connectedStairs">
+            <form class="form-order-connected-stairs" [formGroup]="connectedOrdersForm">
+                <div>
+                    <mat-checkbox id="connected" class="order-connected" color="primary"
+                    formControlName="connected">This staircase is connected to others</mat-checkbox>
+                </div>
+                <mat-form-field class="order-details-total-height">
+                    <mat-label for="totalHeight">Total Height</mat-label>
+                    <input id="totalHeight" matInput type="text" formControlName="totalHeight" placeholder="Ex. 0" />
+                </mat-form-field>
+                <mat-form-field class="order-details-count-in-height">
+                    <mat-label for="countStairsInHeight"># of Staircases In Height</mat-label>
+                    <input id="countStairsInHeight" matInput type="text" formControlName="countStairsInHeight" placeholder="Ex. 0" />
+                </mat-form-field>
+                <mat-form-field class="order-details-count-od-winders">
+                    <mat-label for="countWindersAndLandings"># of Winders and Landing</mat-label>
+                    <input id="countWindersAndLandings" matInput type="text" formControlName="countWindersAndLandings" placeholder="Ex. 0" />
+                </mat-form-field>
+                <mat-form-field class="order-details-divisor">
+                    <mat-label for="connectedTo">Connected to</mat-label>
+                    <input id="connectedTo" matInput type="text" formControlName="connectedTo" placeholder="Ex. 0" />
+                </mat-form-field>
+            </form>
+        </section>
+    </mat-tab>
+    <mat-tab label="Comments">
+        <section class="comments">
+            <form class="form-order-details" [formGroup]="orderCommentsForm">
+                <mat-form-field class="full-width order-details-work-order-comment">
+                    <mat-label for="workorderComments">Work Order</mat-label>
+                    <textarea id="workorderComments" formControlName="workorderComments" matInput></textarea>
+                </mat-form-field>
+
+                <mat-form-field class="full-width order-details-cut-list-comment">
+                    <mat-label for="cutlistComments">Cut List</mat-label>
+                    <textarea id="cutlistComments" formControlName="cutlistComments" matInput></textarea>
+                </mat-form-field>
+
+                <mat-form-field class="full-width order-details-shipping-comment">
+                    <mat-label for="billingComments">Shipping</mat-label>
+                    <textarea id="billingComments" formControlName="billingComments" matInput></textarea>
+                </mat-form-field>
+
+                <mat-form-field class="full-width order-details-invoice-comment">
+                    <mat-label for="invoiceComments">Invoice</mat-label>
+                    <textarea id="invoiceComments" formControlName="invoiceComments" matInput></textarea>
+                </mat-form-field>
+            </form>
+        </section>
+    </mat-tab>
+    <mat-tab label="Images">
+        <section *ngIf="data.Image" class="order-images">
+            <img src="{{data.Image}}" />
+        </section>
+    </mat-tab>
+</mat-tab-group>]
+
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button (click)="apply()">Save</button>
+</mat-dialog-actions>

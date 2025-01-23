@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, Inject, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -23,6 +24,7 @@ import { DeleteStairDialogComponent } from '../delete-stair/delete-stair.compone
         MatButtonModule,
         MatFormFieldModule, 
         MatInputModule,
+        MatIconModule,
         MatTabsModule,
         MatCheckboxModule,
         MatProgressSpinnerModule,
@@ -158,7 +160,7 @@ export class OrderDetailsComponent implements OnInit {
         console.log('--DEBUG-- delete dialog opened: ', this.data);
         const dialogRef = this.dialog.open(DeleteStairDialogComponent, {
             data: {
-                ID: this.data.OrderNum,
+                ID: this.data.Stair
             }
         });
 

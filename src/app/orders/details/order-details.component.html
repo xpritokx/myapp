@@ -237,6 +237,10 @@
     </mat-tab>
 </mat-tab-group>]
 
+<button class="edit-stair-delete-btn" (click)="openDeleteDialog()" mat-mini-fab>
+    <mat-icon>delete</mat-icon>
+</button>
+
 <mat-dialog-actions align="end">
     <button mat-button mat-dialog-close>Cancel</button>
     <button mat-button (click)="apply()">Save</button>

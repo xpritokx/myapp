@@ -1,3 +1,28 @@
+#order-details-updated-label {
+    font-size: 14px;
+    color: rgb(2, 145, 2);
+}
+ 
+::ng-deep .cdk-overlay-pane.mat-mdc-dialog-panel  {
+    min-height: 635px !important;
+}
+
+.publish-icon {
+    margin-left: 10px;
+}
+
+.file-upload-wrapper {
+    margin-top: 10px;
+}
+
+.order-images {
+    text-align: center;
+}
+
+.mat-mdc-dialog-container {
+    height: 100% !important;
+}
+
 .staircases {
     width: 100%;
     height: 500px;
@@ -5,7 +30,7 @@
     overflow: auto;
 }
 
-.connectedStairs {
+.connectedStairs, .order-images {
     width: 100%;
     height: 500px;
     text-align: center;
@@ -24,6 +49,14 @@
     padding-left: 10px;
 }
 
+.order-image-buttons {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
 .blurb {
     margin-left: 25px;
     margin-top: -15px;
@@ -36,4 +69,10 @@
     top: 20px;
     position: absolute;
     background-color: rgb(211, 107, 99);
+}
+
+.edit-stair-upload-image-btn {
+    left: 20px;
+    top: 20px;
+    position: absolute;
 }

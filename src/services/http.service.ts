@@ -38,6 +38,32 @@ export class HTTPService {
         );
     };
 
+    put(path: string, data: any, callback: Function): any {
+        console.log('--DEBUG-- PUT req: ', data);
+
+        const headers = {
+            Authorization: `Bearer ${this.tokenService.getToken()}`
+        };
+
+        console.log('--DEBUG-- Start: ', headers);
+        this.http.put<any>(
+            `${this.BASE_URL}/api/${path}`,
+            data,
+            { headers },
+        ).subscribe(
+            {
+                'next': (data) => {
+                    console.log('--DEBUG-- PUT result: ', data);
+                    callback(data);
+                },
+                'error': (e) => {
+                    console.log('--DEBUG-- PUT error: ', e);
+                    callback(null, e);
+                }
+            }
+        );
+    };
+
     get(path: string, callback: Function): any {
         console.log('--DEBUG-- GET req');
         
@@ -58,4 +84,25 @@ export class HTTPService {
             }
         });
     };
+
+    delete(path: string, callback: Function):any {
+        console.log('--DEBUG-- DELETE req');
+
+        const headers = {
+            Authorization: `Bearer ${this.tokenService.getToken()}`
+        };
+
+        this.http.delete<any>(
+            `${this.BASE_URL}/api/${path}`,
+            { headers },
+        ).subscribe({
+            'next': (data) => {
+                console.log('--DEBUG-- DELETE result: ', data);
+                callback(data);
+            },
+            'error': (e) => {
+                callback(null, e);
+            }
+        });
+    }
 }

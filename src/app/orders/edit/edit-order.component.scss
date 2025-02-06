@@ -17,11 +17,23 @@
     cursor: pointer;
 }
 
+.edit-order-print-btn {
+    right: 70px;
+    top: 20px;
+    position: absolute;
+}
+
 .edit-order-delete-btn {
     right: 20px;
     top: 20px;
     position: absolute;
     background-color: rgb(211, 107, 99);
+}
+
+.edit-order-add-stair-btn {
+    left: 20px;
+    top: 20px;
+    position: absolute;
 }
 
 mat-dialog-container {

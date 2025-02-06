@@ -1,0 +1,37 @@
+<h2 mat-dialog-title>Print Order</h2>
+<p *ngIf="data.SectionType === 'Winder'" class="blurb">{{ data.blurb_winder }}</p>
+
+<mat-tab-group 
+    (selectedTabChange)="tabChanged($event)" 
+    mat-stretch-tabs="false" 
+    mat-align-tabs="start" 
+    mat-align-tabs="center"
+>
+    <mat-tab label="Workorder">
+        <section class="order-workorder">
+            <iframe class="pdf-iframe pdf-iframe-workorders" [src]="safePdfUrlWorkorders" type="application/pdf"></iframe>
+        </section>
+    </mat-tab>
+    <mat-tab label="Cutting List">
+        <section class="order-cutting-list">
+            <iframe class="pdf-iframe pdf-iframe-cuttingList" [src]="safePdfUrlCuttingList" type="application/pdf"></iframe>
+        </section>
+    </mat-tab>
+    <mat-tab label="Sales Order">
+        <section class="order-sales">
+            <iframe class="pdf-iframe pdf-iframe-salesOrder" [src]="safePdfUrlSalesOrder" type="application/pdf"></iframe>
+        </section>
+    </mat-tab>
+    <mat-tab label="Shipping manifest">
+        <section class="order-shipping-manifest">
+            <iframe class="pdf-iframe pdf-iframe-shippingManifest" [src]="safePdfUrlShippingManifest" type="application/pdf"></iframe>
+        </section>
+    </mat-tab>
+</mat-tab-group>
+
+<mat-dialog-actions align="end">
+    <button class="create-workorder-pdf-btn" (click)="newWindow()" mat-mini-fab>
+        <mat-icon>browser_updated</mat-icon>
+    </button>
+    <button mat-button (click)="back()" mat-dialog-close>Back</button>
+</mat-dialog-actions>

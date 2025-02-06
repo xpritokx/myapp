@@ -13,7 +13,6 @@ import { OrdersService } from '../../services/orders.service';
 
 import { IOrder } from '../../interfaces/order.interface';
 
-import { DeleteOrderDialogComponent } from './delete-order/delete-order.component';
 import { AddOrderDialogComponent } from './add/add-order.component';
 import { EditOrderDialogComponent } from './edit/edit-order.component';
 import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
@@ -247,9 +246,9 @@ export class OrdersComponent {
         );
 
         this.isLoading = false;
-        this.total = orders.total;
+        this.total = orders?.total || 0;
 
-        this.dataSource = new MatTableDataSource(orders.data);
+        this.dataSource = new MatTableDataSource(orders?.data || []);
     }
 
     openEditDialog(order: IOrder) {
@@ -260,6 +259,10 @@ export class OrdersComponent {
 
         dialogRef.afterClosed().subscribe(result => {
             console.log(`--DEBUG-- edit dialog result: ${result}`);
+        
+            if (result === 'deleted') {
+                this.getOrders();
+            }
         });
     }
 
@@ -268,7 +271,7 @@ export class OrdersComponent {
         this.dataSource.sort = this.sort;
     }
 
-    openDeleteDialog(order: IOrder) {
+    /* openDeleteDialog(order: IOrder) {
         console.log('--DEBUG-- delete dialog opened: ', order);
         const dialogRef = this.dialog.open(DeleteOrderDialogComponent, {
             data: {
@@ -279,7 +282,7 @@ export class OrdersComponent {
         dialogRef.afterClosed().subscribe(result => {
             console.log(`--DEBUG-- delete dialog result: ${result}`);
         });
-    }
+    } */
 
     handlePageEvent(e: PageEvent) {
         console.log('--DEBUG-- handlePageEvent: ', e);

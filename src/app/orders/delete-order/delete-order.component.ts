@@ -11,7 +11,7 @@ import { MatDialogModule } from '@angular/material/dialog';
         <p>Do you really want to delete "Order {{ data.ID }}"? This process can't be ondone.</p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-        <button mat-button mat-dialog-close>Cancel</button>
+        <button mat-button [mat-dialog-close]="false">Cancel</button>
         <button mat-button [mat-dialog-close]="true">Delete</button>
     </mat-dialog-actions>
   `,

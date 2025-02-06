@@ -9,6 +9,10 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
 
 import { TokenService } from '../services/token.service';
+import { MaterialsService } from '../services/materials.service';
+import { RiserTypesService } from '../services/riserTypes.service';
+import { StairTypesService } from '../services/stairTypes.service';
+import { StairStylesService } from '../services/stairStyles.service';
 import { ConfigService } from '../services/config.service';
 import { logoutButtonDisable, logoutButtonEnable } from '../actions/buttons.actions';
 import { selectLogoutButton } from './selectors/buttons.selectors';
@@ -71,6 +75,10 @@ export class AppComponent {
   private readonly store = inject(Store);
   private readonly tokenService = inject(TokenService);
   private readonly configService = inject(ConfigService);
+  private readonly materialsService = inject(MaterialsService);
+  private readonly stairStyleService = inject(StairStylesService);
+  private readonly stairTypeService = inject(StairTypesService);
+  private readonly riserTypeService = inject(RiserTypesService);
   public readonly deviceDetectorService = inject(DeviceDetectorService);
 
   logoutButton$: Observable<boolean>;
@@ -90,8 +98,27 @@ export class AppComponent {
     if (!config) {
         this.router.navigate(['/auth']);
     } else {
-        this.store.dispatch(logoutButtonEnable());
+      await this.getMaterials();
+
+      this.store.dispatch(logoutButtonEnable());
     }
+  }
+
+  async getMaterials() {
+    const materials = await this.materialsService.getMaterials();
+    const riserTypes = await this.riserTypeService.getRiserTypes();
+    const stairTypes = await this.stairTypeService.getStairTypes();
+    const stairStyles = await this.stairStyleService.getStairStyles();
+
+    const materialsData = materials?.data || [];
+    const riserTypesData = riserTypes?.data || [];
+    const stairTypesData = stairTypes?.data || [];
+    const stairStylesData = stairStyles?.data || [];
+
+    this.materialsService.setMaterials(materialsData);
+    this.riserTypeService.setRiserTypes(riserTypesData);
+    this.stairTypeService.setStairTypes(stairTypesData);
+    this.stairStyleService.setStairStyles(stairStylesData);
   }
 
   goToHome() {

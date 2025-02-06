@@ -1,0 +1,26 @@
+::ng-deep .cdk-overlay-pane.mat-mdc-dialog-panel  {
+    min-height: 635px !important;
+    min-width: 900px !important;
+}
+
+.pdf-iframe {
+    height: 100%;
+    width: 100%;
+}
+
+.mat-mdc-dialog-container {
+    height: 100% !important;
+}
+
+.order-workorder, .order-cutting-list, .order-sales, .order-shipping-manifest {
+    width: 100%;
+    height: 500px;
+    text-align: center;
+    overflow: auto;
+}
+
+.create-workorder-pdf-btn {
+    left: 20px;
+    bottom: 20px;
+    position: absolute;
+}

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
-import { MatDialog, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -12,10 +12,11 @@ import { Observable, BehaviorSubject } from 'rxjs';
 
 import { IOrder } from '../../../interfaces/order.interface';
 
-import { OrdersService } from '../../../services/orders.service';
+import { PrintOrderComponent } from '../print/print-order.component';
 import { OrderDetailsComponent } from '../details/order-details.component';
 import { DeleteOrderDialogComponent } from '../delete-order/delete-order.component';
 
+import { OrdersService } from '../../../services/orders.service';
 @Component({
     selector: 'dialog-edit-order',
     template: `
@@ -98,11 +99,18 @@ import { DeleteOrderDialogComponent } from '../delete-order/delete-order.compone
                     </mat-progress-spinner>
                 </div>
             </section>
+            
+            <button class="edit-order-print-btn" (click)="openPrintDialog()" mat-mini-fab>
+                <mat-icon>print</mat-icon>
+            </button>
             <button class="edit-order-delete-btn" (click)="openDeleteDialog()" mat-mini-fab>
                 <mat-icon>delete</mat-icon>
             </button>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
+            <button class="edit-order-add-stair-btn" (click)="addStair()" mat-mini-fab>
+                <mat-icon>add_2</mat-icon>
+            </button>
             <button mat-button mat-dialog-close>Cancel</button>
             <button mat-button (click)="edit()">Edit</button>
         </mat-dialog-actions>
@@ -126,11 +134,13 @@ export class EditOrderDialogComponent implements OnInit {
     public loading$ = new BehaviorSubject<boolean>(false);
     dataSource: MatTableDataSource<any> = new MatTableDataSource();
     ordersService = inject(OrdersService);
+    orders: any[] = [];
+    stairsCount = 0;
 
     getLoading(): Observable<boolean> {
         return this.loading$;
     }
-    
+
     displayedColumns: string[] = [
         'Stair',
         'Location',
@@ -154,7 +164,10 @@ export class EditOrderDialogComponent implements OnInit {
         deliveryDate: new FormControl('')
     });
 
-    constructor(@Inject(MAT_DIALOG_DATA) public data: IOrder) {
+    constructor(
+        @Inject(MAT_DIALOG_DATA) public data: IOrder,
+        public dialogRef: MatDialogRef<any>
+    ) {
         this.editOrderForm = new FormGroup({
             number: new FormControl(data.OrderNum),
             customer: new FormControl({
@@ -182,9 +195,7 @@ export class EditOrderDialogComponent implements OnInit {
         this.getOrders();
     }
 
-    edit() {
-        console.log('--DEBUG-- dialog edit!');
-    }
+    async edit() {}
 
     async getOrders() {
         this.loading$.next(true);
@@ -193,6 +204,12 @@ export class EditOrderDialogComponent implements OnInit {
             data: any[];
             total: number;
         } = await this.ordersService.getOrdersByOrderNumber(this.data.OrderNum);
+
+        if (!orders?.data || !orders?.data.length) {
+            return this.dialogRef.close();
+        }
+
+        this.stairsCount = orders?.data.length;
 
         for (let i = 0; i < orders.data.length; i++) {
             if (orders.data[i]['WinderLocation']) {
@@ -205,17 +222,46 @@ export class EditOrderDialogComponent implements OnInit {
 
         this.loading$.next(false);
         this.dataSource.connect().next(orders.data);
+        this.orders = orders.data;
     }
 
     open(order:any) {
         console.log('--DEBUG-- dialog get one order', order);
+        let stairCount = 0;
 
         const dialogRef = this.dialog.open(OrderDetailsComponent, {
-            data: order
+            data: {
+                ...order,
+                stairsCount: this.stairsCount,
+                stairs: this.orders.map(o => {
+                    stairCount++;
+
+                    return {
+                        ID: o.ID,
+                        Number: stairCount
+                    };
+                }).filter(o => o.ID !== order.ID)
+            }
         });
 
         dialogRef.afterClosed().subscribe(result => {
-            console.log(`--DEBUG-- get one order dialog result: ${result}`);
+            if (['deleted','updated'].includes(result)) {
+                this.getOrders();
+            }
+        });
+    }
+
+    openPrintDialog() {
+        console.log('--DEBUG-- print dialog opened: ', this.data);
+        const dialogRef = this.dialog.open(PrintOrderComponent, {
+            data: {
+                orders: this.orders,
+                data: this.data,
+            }
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            console.log(`--DEBUG-- print dialog result: ${result}`);
         });
     }
 
@@ -227,8 +273,28 @@ export class EditOrderDialogComponent implements OnInit {
             }
         });
 
-        dialogRef.afterClosed().subscribe(result => {
+        dialogRef.afterClosed().subscribe(async (result) => {
             console.log(`--DEBUG-- delete dialog result: ${result}`);
+
+            if (result) {
+                await this.ordersService.deleteOrder(
+                    this.data.OrderNum, 
+                );
+
+                this.dialogRef.close('deleted');
+            }
         });
+    }
+
+    async addStair() {
+        const order = this.orders[this.orders.length - 1];
+        console.log('--DEBUG-- add stair');
+
+        await this.ordersService.addStair({
+            "id": order.ID,
+            "orderNum": this.data.OrderNum,
+        });
+
+        this.getOrders();
     }
 }

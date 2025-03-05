@@ -20,7 +20,7 @@ import { OrdersService } from '../../../services/orders.service';
 @Component({
     selector: 'dialog-edit-order',
     template: `
-        <h2 mat-dialog-title>Order #{{ data.OrderNum }}</h2>
+        <h2 mat-dialog-title>{{ data.quote ? 'Quote' : 'Order' }} #{{ data.OrderNum }}</h2>
         <p class="date-created">Created {{ data.OrderDate }}</p>
         <mat-dialog-content class="mat-typography">
             <section class="work-order">
@@ -134,6 +134,7 @@ export class EditOrderDialogComponent implements OnInit {
     public loading$ = new BehaviorSubject<boolean>(false);
     dataSource: MatTableDataSource<any> = new MatTableDataSource();
     ordersService = inject(OrdersService);
+    salesOrders: any[] = [];
     orders: any[] = [];
     stairsCount = 0;
 
@@ -195,7 +196,11 @@ export class EditOrderDialogComponent implements OnInit {
         this.getOrders();
     }
 
-    async edit() {}
+    async edit() {
+        console.log('--DEBUG-- dialog edit order');
+
+        this.dialogRef.close('deleted');
+    }
 
     async getOrders() {
         this.loading$.next(true);
@@ -204,6 +209,11 @@ export class EditOrderDialogComponent implements OnInit {
             data: any[];
             total: number;
         } = await this.ordersService.getOrdersByOrderNumber(this.data.OrderNum);
+
+        const salesOrders: {
+            data: any[];
+            total: number;
+        } = await this.ordersService.getSalesOrdersByOrderNumber(this.data.OrderNum);
 
         if (!orders?.data || !orders?.data.length) {
             return this.dialogRef.close();
@@ -223,6 +233,7 @@ export class EditOrderDialogComponent implements OnInit {
         this.loading$.next(false);
         this.dataSource.connect().next(orders.data);
         this.orders = orders.data;
+        this.salesOrders = salesOrders.data;
     }
 
     open(order:any) {
@@ -240,13 +251,28 @@ export class EditOrderDialogComponent implements OnInit {
                         ID: o.ID,
                         Number: stairCount
                     };
-                }).filter(o => o.ID !== order.ID)
-            }
+                }).filter(o => o.ID !== order.ID),
+                quote: this.data.quote
+            },
+            panelClass: 'stair-detail-dialog'
         });
 
-        dialogRef.afterClosed().subscribe(result => {
+        dialogRef.afterClosed().subscribe(async result => {
             if (['deleted','updated'].includes(result)) {
                 this.getOrders();
+            }
+
+            if (result === 'reopen') {
+                
+                await this.getOrders();
+
+                let updatedOrder = this.orders.find((o: any) => {
+                    return o.ID === order.ID;
+                });
+
+                console.log('--DEBUG-- updatedOrder: ', updatedOrder);
+
+                this.open(updatedOrder);
             }
         });
     }
@@ -255,8 +281,10 @@ export class EditOrderDialogComponent implements OnInit {
         console.log('--DEBUG-- print dialog opened: ', this.data);
         const dialogRef = this.dialog.open(PrintOrderComponent, {
             data: {
+                salesOrders: this.salesOrders,
                 orders: this.orders,
                 data: this.data,
+                quote: this.data.quote
             }
         });
 

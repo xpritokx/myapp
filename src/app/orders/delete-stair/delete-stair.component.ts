@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 
 @Component({
-  selector: 'dialog-delete-order',
+  selector: 'dialog-delete-stair',
   template: `
     <h2 mat-dialog-title>Are you sure?</h2>
     <mat-dialog-content class="mat-typography text-area">
@@ -20,5 +20,5 @@ import { MatDialogModule } from '@angular/material/dialog';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DeleteStairDialogComponent {
-    constructor(@Inject(MAT_DIALOG_DATA) public data: {ID: string}) { }
+    constructor(@Inject(MAT_DIALOG_DATA) public data: {ID: string}) {}
 }

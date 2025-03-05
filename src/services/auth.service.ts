@@ -23,7 +23,11 @@ export class AuthService {
         };
 
         return new Promise((resolve, reject) => {
-            this.httpService.post('auth', data, (result: any) => {
+            this.httpService.post('auth', data, (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 this.tokenService.setToken(result?.token || '');
 
                 resolve(result);

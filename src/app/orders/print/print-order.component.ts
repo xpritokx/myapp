@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, Inject, inject, OnInit, signal, ViewChild, ElementRef } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ChangeDetectionStrategy, Component, Inject, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,13 +7,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BehaviorSubject } from 'rxjs';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSelectModule } from '@angular/material/select';
+import { DomSanitizer } from '@angular/platform-browser';
+
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib'
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
     selector: 'print-order',
@@ -106,6 +106,10 @@ export class PrintOrderComponent implements OnInit {
         return bytes.buffer;
     }
 
+    formatPrice(price: number): string {
+        return `$${price.toFixed(2)}`;
+    }
+
     decimalToMixedFraction(decimal: number): string {
         if (Number.isInteger(decimal)) return decimal.toString(); // Return whole numbers directly
     
@@ -156,14 +160,25 @@ export class PrintOrderComponent implements OnInit {
 
         page.setRotation(degrees(90));
 
-        page.drawText(`Work Order          No.  ${this.data.data.OrderNum}`, {
-          x: 35,
-          y: height - 500,
-          size: titleFontSize,
-          font: titleCourierFont,
-          color: rgb(0, 0, 0),
-          rotate: degrees(90)
-        });
+        if (this.data.quote) {
+            page.drawText(`QUOTE ONLY. DO NOT MANUFACTURE     No.  ${this.data.data.OrderNum}`, {
+                x: 35,
+                y: height - 700,
+                size: titleFontSize,
+                font: titleCourierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        } else {
+            page.drawText(`Work Order          No.  ${this.data.data.OrderNum}`, {
+                x: 35,
+                y: height - 500,
+                size: titleFontSize,
+                font: titleCourierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        }
 
         page.drawLine({
             start: { x: 50, y: 30 },
@@ -470,63 +485,65 @@ export class PrintOrderComponent implements OnInit {
         let imageLabelHeight = 585;
         let imageCount = 0;
 
-        if (Number(this.data.data.StairsNum) > 7) {
+        if (heightOfDocument >= 435) {
             page = pdfDoc.addPage();
             page.setRotation(degrees(90));
 
             imageHeight = 150;
             imageLabelHeight = 165;
-            heightOfDocument = 50;
+            heightOfDocument = 35;
         }
 
         for (let order of this.data.orders) {
-            if (order.Image) {
-                try {
-                    if (order.Image.indexOf('image/png') !== -1) {
-                        console.log('--DEBUG-- png');
-                        image = await pdfDoc.embedPng(this.base64ToArrayBuffer(order.Image.split(',')[1]));
-                    } else {
-                        console.log('--DEBUG-- jpg');
-                        image = await pdfDoc.embedJpg(this.base64ToArrayBuffer(order.Image.split(',')[1]));
+            if (order.Images?.length) {
+                for (let img of order.Images) {
+                    try {
+                        if (img.img.indexOf('image/png') !== -1) {
+                            console.log('--DEBUG-- png');
+                            image = await pdfDoc.embedPng(this.base64ToArrayBuffer(img.img.split(',')[1]));
+                        } else {
+                            console.log('--DEBUG-- jpg');
+                            image = await pdfDoc.embedJpg(this.base64ToArrayBuffer(img.img.split(',')[1]));
+                        }
+                        console.log('--DEBUG-- image count: ', imageCount)
+                        if (imageCount >= 4) {
+                            imageCount = 0;
+                            imageHeight += 175;
+                            imageLabelHeight += 175;
+                            imagesDistance = 0;
+                        }
+                        imageCount++;
+    
+                        dims = image.scale(0.6);
+    
+                        if (dims.height > 150) {
+                            dims.height = 150;
+                            dims.width = 130;
+                        }
+    
+                        page.drawImage(image, {
+                            x: imageHeight,
+                            y: height - 805 + imagesDistance,
+                            width: dims.width,
+                            height: dims.height,
+                            rotate: degrees(90),
+                        });
+    
+                        page.drawText(`Custom ${order.StairNum}`, {
+                            x: imageLabelHeight,
+                            y: height - 805 + imagesDistance,
+                            size: imageLabelSize,
+                            font: titleCourierFont,
+                            color: rgb(0, 0, 0),
+                            rotate: degrees(90)
+                        });
+    
+                        imagesDistance += 200;
+                    } catch (err) {
+                        console.log('--DEBUG--  img err: ', err);
+                        continue;
                     }
-                    console.log('--DEBUG-- image count: ', imageCount)
-                    if (imageCount >= 4) {
-                        imageCount = 0;
-                        imageHeight += 165;
-                        imageLabelHeight += 165;
-                    }
-                    imageCount++;
-                } catch (err) {
-                    console.log('--DEBUG--  img err: ', err);
-                    continue;
                 }
-                
-                dims = image.scale(0.6);
-                console.log('--DEBUG-- dimensions: ', dims);
-
-                if (dims.height > 150) {
-                    dims.height = 150;
-                    dims.width = 130;
-                }
-
-                page.drawImage(image, {
-                    x: imageHeight,
-                    y: height - 805 + imagesDistance,
-                    width: dims.width,
-                    height: dims.height,
-                    rotate: degrees(90),
-                });
-
-                page.drawText(`Custom ${order.StairNum}`, {
-                    x: imageLabelHeight,
-                    y: height - 805 + imagesDistance,
-                    size: imageLabelSize,
-                    font: titleCourierFont,
-                    color: rgb(0, 0, 0),
-                    rotate: degrees(90)
-                });
-
-                imagesDistance += 200;
             }
         }
 
@@ -558,14 +575,25 @@ export class PrintOrderComponent implements OnInit {
 
         page.setRotation(degrees(90));
 
-        page.drawText(`Cutting List         No.  ${this.data.data.OrderNum}`, {
-          x: 35,
-          y: height - 500,
-          size: titleFontSize,
-          font: titleCourierFont,
-          color: rgb(0, 0, 0),
-          rotate: degrees(90)
-        });
+        if (this.data.quote) {
+            page.drawText(`QUOTE ONLY. DO NOT MANUFACTURE     No.  ${this.data.data.OrderNum}`, {
+                x: 35,
+                y: height - 700,
+                size: titleFontSize,
+                font: titleCourierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        } else {
+            page.drawText(`Cutting List         No.  ${this.data.data.OrderNum}`, {
+                x: 35,
+                y: height - 500,
+                size: titleFontSize,
+                font: titleCourierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        }
 
         page.drawLine({
             start: { x: 50, y: 30 },
@@ -671,7 +699,7 @@ export class PrintOrderComponent implements OnInit {
         let heightOfDocument = 180;
         let treadWidth;
 
-        let cutOrderInfo = (hghtOfDcmnt: number, strs: any) => {
+        let cutOrderInfo = (hghtOfDcmnt: number, strs: any, cutThePage: boolean = false) => {
             page.drawText(`SLABS NEEDED FOR TREADS:`, {
                 x: hghtOfDcmnt,
                 y: height - 800,
@@ -826,6 +854,13 @@ export class PrintOrderComponent implements OnInit {
     
             hghtOfDcmnt += 25;
     
+            if (hghtOfDcmnt > 500 && cutThePage) {
+                page = pdfDoc.addPage();
+                page.setRotation(degrees(90));
+    
+                hghtOfDcmnt = 35;
+            }
+
             page.drawText(`Threads:`, {
                 x: hghtOfDcmnt,
                 y: height - 650,
@@ -866,6 +901,13 @@ export class PrintOrderComponent implements OnInit {
                 hghtOfDcmnt += 15;
             });
     
+            if (hghtOfDcmnt > 500 && cutThePage) {
+                page = pdfDoc.addPage();
+                page.setRotation(degrees(90));
+    
+                hghtOfDcmnt = 35;
+            }
+            
             page.drawText(`RISERS Standart:`, {
                 x: hghtOfDcmnt,
                 y: height - 700,
@@ -906,6 +948,12 @@ export class PrintOrderComponent implements OnInit {
                 hghtOfDcmnt += 15;
             });
     
+            if (hghtOfDcmnt > 500 && cutThePage) {
+                page = pdfDoc.addPage();
+                page.setRotation(degrees(90));
+    
+                hghtOfDcmnt = 35;
+            }
     
             page.drawText(`Bottom:`, {
                 x: hghtOfDcmnt,
@@ -947,6 +995,13 @@ export class PrintOrderComponent implements OnInit {
                 hghtOfDcmnt += 15;
             });
     
+            if (hghtOfDcmnt > 500 && cutThePage) {
+                page = pdfDoc.addPage();
+                page.setRotation(degrees(90));
+    
+                hghtOfDcmnt = 35;
+            }
+
             page.drawText(`TOP RISER:`, {
                 x: hghtOfDcmnt,
                 y: height - 665,
@@ -999,7 +1054,7 @@ export class PrintOrderComponent implements OnInit {
             return hghtOfDcmnt;
         }
 
-        heightOfDocument = cutOrderInfo(heightOfDocument, stairs);
+        heightOfDocument = cutOrderInfo(heightOfDocument, stairs, true);
 
         page.drawText('Note: If there are any discrepancies between consolidated list and individual job lists please', {
             x: heightOfDocument,
@@ -1302,14 +1357,25 @@ export class PrintOrderComponent implements OnInit {
 
         page.setRotation(degrees(90));
 
-        page.drawText(`Sales Order         No.  ${this.data.data.OrderNum}`, {
-          x: 35,
-          y: height - 500,
-          size: titleFontSize,
-          font: titleCourierFont,
-          color: rgb(0, 0, 0),
-          rotate: degrees(90)
-        });
+        if (this.data.quote) {
+            page.drawText(`QUOTE ONLY. DO NOT MANUFACTURE     No.  ${this.data.data.OrderNum}`, {
+                x: 35,
+                y: height - 700,
+                size: titleFontSize,
+                font: titleCourierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        } else {
+            page.drawText(`Sales Order         No.  ${this.data.data.OrderNum}`, {
+                x: 35,
+                y: height - 500,
+                size: titleFontSize,
+                font: titleCourierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        }
 
         page.drawLine({
             start: { x: 50, y: 30 },
@@ -1393,6 +1459,178 @@ export class PrintOrderComponent implements OnInit {
         page.drawLine({
             start: { x: 140, y: 30 },
             end: { x: 140, y: 810 },
+            thickness: 2,
+            color: rgb(0, 0, 0),
+        });
+
+        page.drawText(`Item No.      Ordered       Unit     Description                        Tax     Unit Price        Amount`, {
+            x: 160,
+            y: height - 800,
+            size: fontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        page.drawLine({
+            start: { x: 170, y: 30 },
+            end: { x: 180, y: 810 },
+            thickness: 2,
+            color: rgb(0, 0, 0),
+        });
+
+        let heightOfDocument = 170;
+        let extended = 0;
+
+        this.data.salesOrders.forEach((order: any) => {
+            heightOfDocument += 20;
+
+            page.drawText(`${order.PriceCode}`.toUpperCase(), {
+                x: heightOfDocument,
+                y: height - 800,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${order.Qty}`, {
+                x: heightOfDocument,
+                y: height - 680,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${order.Unit}`, {
+                x: heightOfDocument,
+                y: height - 595,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${order.Description}`, {
+                x: heightOfDocument,
+                y: height - 530,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${order.Tax}`, {
+                x: heightOfDocument,
+                y: height - 270,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${this.formatPrice(order.UnitPrice)}`, {
+                x: heightOfDocument,
+                y: height - 200,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${this.formatPrice(order.Amount)}`, {
+                x: heightOfDocument,
+                y: height - 90,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        });
+
+        heightOfDocument += 30;
+
+        let subtotal = this.data.salesOrders.reduce((t:number , order:any) => {
+            return t + order.Amount;
+        }, 0);
+
+        page.drawText(`Subtotal`, {
+            x: heightOfDocument,
+            y: height - 400,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        page.drawText(`${this.formatPrice(subtotal)}`, {
+            x: heightOfDocument,
+            y: height - 90,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 30;
+
+        page.drawText(`3 - GST 5.00%`, {
+            x: heightOfDocument,
+            y: height - 400,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        let gst = subtotal * 0.05;
+
+        page.drawText(`${this.formatPrice(gst)}`, {
+            x: heightOfDocument,
+            y: height - 90,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 30;
+
+        page.drawLine({
+            start: { x: heightOfDocument, y: 30 },
+            end: { x: heightOfDocument, y: 810 },
+            thickness: 2,
+            color: rgb(0, 0, 0),
+        });
+
+        heightOfDocument += 20;
+
+        page.drawText(`Total Amount`, {
+            x: heightOfDocument,
+            y: height - 250,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        let total = subtotal + gst;
+
+        page.drawText(`${this.formatPrice(total)}`, {
+            x: heightOfDocument,
+            y: height - 90,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 20;
+
+        page.drawLine({
+            start: { x: heightOfDocument, y: 30 },
+            end: { x: heightOfDocument, y: 810 },
             thickness: 2,
             color: rgb(0, 0, 0),
         });
@@ -1424,14 +1662,25 @@ export class PrintOrderComponent implements OnInit {
 
         page.setRotation(degrees(90));
 
-        page.drawText(`Shipping Manifest       No.  ${this.data.data.OrderNum}`, {
-          x: 35,
-          y: height - 500,
-          size: titleFontSize,
-          font: titleCourierFont,
-          color: rgb(0, 0, 0),
-          rotate: degrees(90)
-        });
+        if (this.data.quote) {
+            page.drawText(`QUOTE ONLY. DO NOT MANUFACTURE     No.  ${this.data.data.OrderNum}`, {
+                x: 35,
+                y: height - 700,
+                size: titleFontSize,
+                font: titleCourierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        } else {
+            page.drawText(`Shipping Manifest       No.  ${this.data.data.OrderNum}`, {
+                x: 35,
+                y: height - 500,
+                size: titleFontSize,
+                font: titleCourierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+        }
 
         page.drawLine({
             start: { x: 50, y: 30 },
@@ -1519,10 +1768,348 @@ export class PrintOrderComponent implements OnInit {
             color: rgb(0, 0, 0),
         });
 
+        page.drawText(`Location         Length      OSM       Height       Risers      Rise      Run`, {
+            x: 160,
+            y: height - 800,
+            size: fontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        page.drawLine({
+            start: { x: 170, y: 30 },
+            end: { x: 170, y: 810 },
+            thickness: 1,
+            color: rgb(0, 0, 0),
+        });
+
+        let heightOfDocument = 170;
+        let location: string;
+        let extended = 0;
+
+        this.data.orders.forEach((order: any) => {
+            extended = 0;
+            heightOfDocument += 15;
+
+            page.drawText(`${order.StairNum}.`, {
+                x: heightOfDocument,
+                y: height - 830,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            location = order.SectionType === 'Winder' ? order.WinderLocation : order.Location;
+
+            if (location?.length >= 20) {
+                let locationArr = this.splitBy2(location, ' ');
+
+                extended = 10;
+
+                page.drawText(`${locationArr[0]}`, {
+                    x: heightOfDocument,
+                    y: height - 805,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+                page.drawText(`${locationArr[1]}`, {
+                    x: heightOfDocument + 13,
+                    y: height - 805,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            } else {
+                page.drawText(`  ${location}`, {
+                    x: heightOfDocument,
+                    y: height - 805,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
+
+            page.drawText(`${this.decimalToMixedFraction(order.Length)}`, {
+                x: heightOfDocument,
+                y: height - 675,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${this.decimalToMixedFraction(order.OSM)}`, {
+                x: heightOfDocument,
+                y: height - 590,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${this.decimalToMixedFraction(order.Height)}`, {
+                x: heightOfDocument,
+                y: height - 520,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            let risersNum = `${this.decimalToMixedFraction(order.Qty)}`;
+
+            page.drawText(risersNum, {
+                x: heightOfDocument,
+                y: height - 410,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${this.decimalToMixedFraction(order.RiseOfStair)}`, {
+                x: heightOfDocument,
+                y: height - 340,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            page.drawText(`${this.decimalToMixedFraction(order.StairRun)}`, {
+                x: heightOfDocument,
+                y: height - 275,
+                size: tableFontSize,
+                font: courierFont,
+                color: rgb(0, 0, 0),
+                rotate: degrees(90)
+            });
+
+            if (order.blurb_winder) {
+                page.drawText(`${order.blurb_winder.replace(/\\n/g, '')}`, {
+                    x: heightOfDocument + extended + 13,
+                    y: height - 490,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0.53, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
+
+            heightOfDocument += 20 + extended;
+
+            page.drawLine({
+                start: { x: heightOfDocument, y: 30 },
+                end: { x: heightOfDocument, y: 810 },
+                thickness: 1,
+                color: rgb(0, 0, 0),
+            });
+        });
+
+        heightOfDocument += 20;
+
+        let stairs = this.data.orders.reduce((t: string, o: any) => {
+            return t + ` ${o.StairNum},`
+        }, 'Stairs');
+
+        stairs = stairs.slice(0, stairs.length - 1);
+
+        page.drawText(stairs, {
+            x: heightOfDocument,
+            y: height - 830,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 20;
+
+        page.drawText('Total height:', {
+            x: heightOfDocument,
+            y: height - 700,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        page.drawText(`${this.data.orders.reduce((t: number, o: any) => {
+            return t + o.Height;
+        }, 0)}`, {
+            x: heightOfDocument,
+            y: height - 600,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 20;
+
+        page.drawText('# Staircases in height:', {
+            x: heightOfDocument,
+            y: height - 770,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        page.drawText(`${this.data.orders.filter((o: any) => {
+            return o.SectionType === 'Stair'
+        }).length}`, {
+            x: heightOfDocument,
+            y: height - 600,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 20;
+
+        page.drawText('# Winders and Landings in height:', {
+            x: heightOfDocument,
+            y: height - 830,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        page.drawText(`${this.data.orders.filter((o: any) => {
+            return o.SectionType !== 'Stair'
+        }).length}`, {
+            x: heightOfDocument,
+            y: height - 600,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 30;
+
+        if (heightOfDocument > 500 && heightOfDocument) {
+            page = pdfDoc.addPage();
+            page.setRotation(degrees(90));
+
+            heightOfDocument = 35;
+        }
+
+        page.drawText('This is the total height of stair. If this differs from your actual height, please don\'t install the stairs.', {
+            x: heightOfDocument,
+            y: height - 830,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 20;
+
+        page.drawText('Please call the Stair Shoppe at (403) 295-2686 if you have any questions prior to installation.', {
+            x: heightOfDocument,
+            y: height - 830,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        heightOfDocument += 20;
+
+        page.drawText(`Please have your order number handy (${this.data.data.OrderNum}).`, {
+            x: heightOfDocument,
+            y: height - 830,
+            size: tableFontSize,
+            font: courierFont,
+            color: rgb(0, 0, 0),
+            rotate: degrees(90)
+        });
+
+        let image: any;
+        let dims: any;
+        let pdfUrl:string = '';
+        let imagesDistance = 0;
+        let imageHeight = 570;
+        let imageLabelHeight = 585;
+        let imageCount = 0;
+
+        console.log('--DEBUG-- heightOfDocument: ', heightOfDocument);
+        if (heightOfDocument >= 435) {
+            page = pdfDoc.addPage();
+            page.setRotation(degrees(90));
+
+            imageHeight = 150;
+            imageLabelHeight = 165;
+            heightOfDocument = 35;
+        }
+
+        for (let order of this.data.orders) {
+            if (order.Images?.length) {
+                for (let img of order.Images) {
+                    try {
+                        if (img.indexOf('image/png') !== -1) {
+                            console.log('--DEBUG-- png');
+                            image = await pdfDoc.embedPng(this.base64ToArrayBuffer(img.img.split(',')[1]));
+                        } else {
+                            console.log('--DEBUG-- jpg');
+                            image = await pdfDoc.embedJpg(this.base64ToArrayBuffer(img.img.split(',')[1]));
+                        }
+                        console.log('--DEBUG-- image count: ', imageCount)
+                        if (imageCount >= 4) {
+                            imageCount = 0;
+                            imageHeight += 175;
+                            imageLabelHeight += 175;
+                            imagesDistance = 0;
+                        }
+                        imageCount++;
+    
+                        dims = image.scale(0.6);
+    
+                        if (dims.height > 150) {
+                            dims.height = 150;
+                            dims.width = 130;
+                        }
+    
+                        page.drawImage(image, {
+                            x: imageHeight,
+                            y: height - 805 + imagesDistance,
+                            width: dims.width,
+                            height: dims.height,
+                            rotate: degrees(90),
+                        });
+    
+                        page.drawText(`Custom ${order.StairNum}`, {
+                            x: imageLabelHeight,
+                            y: height - 805 + imagesDistance,
+                            size: imageLabelSize,
+                            font: titleCourierFont,
+                            color: rgb(0, 0, 0),
+                            rotate: degrees(90)
+                        });
+    
+                        imagesDistance += 200;
+                    } catch (err) {
+                        console.log('--DEBUG--  img err: ', err);
+                        continue;
+                    }
+                }
+            }
+        }
+
         this.shippingManifestPdfBytes = await pdfDoc.saveAsBase64();
-        let pdfUrl = "data:application/pdf;base64," + encodeURI(this.shippingManifestPdfBytes)
-        
-        console.log('--DEBUG-- pdfUrl sales order: ', pdfUrl)
+        pdfUrl = "data:application/pdf;base64," + encodeURI(this.shippingManifestPdfBytes);
+
+        console.log('--DEBUG-- pdfUrl sales order: ', pdfUrl);
 
         try {
             this.safePdfUrlShippingManifest = this.sanitizer.bypassSecurityTrustResourceUrl(pdfUrl);

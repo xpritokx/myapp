@@ -1,14 +1,22 @@
-<h2 mat-dialog-title>Order #{{data.OrderNum}} {{data.SectionType}} # {{data.Stair}} <span *ngIf="updatedLabel$ | async" id="order-details-updated-label">Updated</span></h2>
+<h2 mat-dialog-title>
+    {{ data.quote ? 'Quote' : 'Order' }} #{{data.OrderNum}} {{data.SectionType}} # {{data.Stair}} 
+    <span *ngIf="updatedLabel$ | async" id="order-details-updated-label">Updated</span>
+    <span *ngIf="imageUploadingFailedLabel$ | async" id="order-details-image-uploading-failed-label">Uploading Failed</span>
+</h2>
 <p *ngIf="data.SectionType === 'Winder'" class="blurb">{{ data.blurb_winder }}</p>
 
 <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" mat-align-tabs="center">
     <mat-tab label="Staircases">
         <section class="staircases">
             <form class="form-order-details" [formGroup]="orderDetailsForm">
-                <div *ngIf="data.Image">
-                    <img src="{{data.Image}}" />
+                <div class="slider-container" *ngIf="((imgs$ | async) || []).length">
+                    <button *ngIf="((imgs$ | async) || []).length > 1" class="button-sldr button-sldr-prev" (click)="prevImageStrcssWndw()">&#10094;</button>
+                    
+                    <img [src]="((imgs$ | async) || [])[imageIndexStrcss].img" class="slider-image" alt="Slider Image">
+                    
+                    <button *ngIf="((imgs$ | async) || []).length > 1" class="button-sldr button-sldr-next" (click)="nextImageStrcssWndw()">&#10095;</button>
                 </div>
-                <mat-form-field class="order-details-section-type details-width">    
+                <mat-form-field class="order-details-section-type details-width">
                     <mat-label>Section Type</mat-label>
                     <select matNativeControl 
                         [ngModelOptions]="{standalone: true}"
@@ -20,10 +28,22 @@
                         @for (sectionTypeField of sectionTypeFields; track sectionTypeField) {
                             <option [value]="sectionTypeField.value">{{sectionTypeField.viewValue}}</option>
                         }
-                    </select></mat-form-field>
-                <mat-form-field class="order-details-location details-width">    
-                    <mat-label for="location">Location</mat-label>
-                    <input id="location" matInput type="text" formControlName="location" placeholder="Ex. 27230" />
+                    </select>
+                </mat-form-field>
+
+                <mat-form-field class="create-order-model eighty-precent-width">
+                    <mat-label>Location</mat-label>
+                    <input type="text"
+                        placeholder="Pick one"
+                        aria-label="Model"
+                        matInput
+                        [formControl]="location"
+                        [matAutocomplete]="auto1">
+                    <mat-autocomplete #auto1="matAutocomplete">
+                        @for (locationField of filteredLocationOptions$ | async; track locationField.viewValue) {
+                            <mat-option [value]="locationField">{{ locationField.viewValue }}</mat-option>
+                        }
+                    </mat-autocomplete>
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-location details-width">    
@@ -33,17 +53,17 @@
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-length">
                     <mat-label for="length">Length</mat-label>
-                    <input id="length" matInput type="text" formControlName="length" placeholder="Ex. 27230" />
+                    <input id="length" (change)="numberFieldChanged($event)" matInput type="text" formControlName="length" placeholder="Ex. 27230" />
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-height">
                     <mat-label for="height">Height</mat-label>
-                    <input id="height" [disabled]="true" matInput type="text" formControlName="height" placeholder="Ex. 27230" />
+                    <input id="height" (change)="numberFieldChanged($event)" matInput type="text" formControlName="height" placeholder="Ex. 27230" />
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-width">
                     <mat-label for="width">Width</mat-label>
-                    <input id="width" matInput type="text" formControlName="width" placeholder="Ex. 27230" />
+                    <input id="width" (change)="numberFieldChanged($event)" matInput type="text" formControlName="width" placeholder="Ex. 27230" />
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-run">
@@ -51,7 +71,7 @@
                     <input id="run" matInput type="text" formControlName="run" placeholder="Ex. 27230" />
                 </mat-form-field>
                 
-                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-rise">
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-rise eighty-precent-width">
                     <mat-label for="rise">Rise</mat-label>
                     <input id="rise" matInput type="text" formControlName="rise" placeholder="Ex. 27230" />
                 </mat-form-field>
@@ -63,13 +83,13 @@
 
                 <mat-form-field *ngIf="(sectionType$ | async) !== 'Landing'" class="order-details-rise-count">
                     <mat-label for="riseCount"># of Rises</mat-label>
-                    <input id="riseCount" matInput type="text" formControlName="riseCount" placeholder="Ex. 27230" />
+                    <input id="riseCount" (change)="numberFieldChanged($event)" matInput type="text" formControlName="riseCount" placeholder="Ex. 27230" />
                 </mat-form-field>
 
-                <!-- <mat-form-field *ngIf="data.SectionType !== 'Landing'" class="order-details-style">
-                    <mat-label for="stairStyle">Stair Style</mat-label>
-                    <input id="stairStyle" matInput type="text" formControlName="stairStyle" placeholder="Ex. Standart, Carriage, PocketRoute" />
-                </mat-form-field> -->
+                <mat-form-field *ngIf="(sectionType$ | async) !== 'Landing'" class="order-details-treads-count">
+                    <mat-label for="treadsCount"># of Treads</mat-label>
+                    <input id="treadsCount" (change)="numberFieldChanged($event)" matInput type="text" formControlName="treadsCount" placeholder="Ex. 27230" />
+                </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) !== 'Landing'">
                     <mat-label>Stair Style</mat-label>
@@ -90,17 +110,13 @@
                     <input id="sectionDesc" matInput type="text" formControlName="sectionDesc" placeholder="Ex. 1'Ply" />
                 </mat-form-field>
 
-                <!-- <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-type">
-                    <mat-label for="stairType">Stair Type</mat-label>
-                    <input id="stairType" matInput type="text" formControlName="stairType" placeholder="Ex. 1'Ply" />
-                </mat-form-field> -->
-
-                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'">
+                <mat-form-field class="order-details-method" *ngIf="(sectionType$ | async) === 'Stair'">
                     <mat-label>Stair Type</mat-label>
                         <select matNativeControl 
                             [ngModelOptions]="{standalone: true}"
                             [(ngModel)]="selectedStairTypeField" 
                             name="dateField"
+                            (change)="stairTypeChanged($event)"
                         >
                             <option value="" selected></option>
                             @for (stairTypesField of stairTypesFields; track stairTypesField) {
@@ -109,10 +125,9 @@
                         </select>
                 </mat-form-field>
 
-                <!-- <mat-form-field *ngIf="data.SectionType !== 'Landing'" class="order-details-riser-type">
-                    <mat-label for="riserType">Riser Type</mat-label>
-                    <input id="riserType" matInput type="text" formControlName="riserType" placeholder="Ex. Closed, Open, Semi-Closed" />
-                </mat-form-field> -->
+                <div *ngIf="(sectionType$ | async) === 'Stair'" id="show-methods-info">
+                    <mat-icon aria-hidden="false" aria-label="Stair shape" (click)="selectStairShape()" fontIcon="add_circle">add_circle</mat-icon>
+                </div>
 
                 <mat-form-field *ngIf="(sectionType$ | async) !== 'Landing'">
                     <mat-label>Riser Type</mat-label>
@@ -128,17 +143,33 @@
                         </select>
                 </mat-form-field>
 
-                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-method">
-                    <mat-label for="method">Method</mat-label>
-                    <input id="method" matInput type="text" formControlName="method" placeholder="Ex. A, B, C" />
+                <mat-form-field class="order-details-method" *ngIf="(sectionType$ | async) === 'Stair'">
+                    <mat-label>Method</mat-label>
+                        <select matNativeControl 
+                            [ngModelOptions]="{standalone: true}"
+                            [(ngModel)]="selectedMethodField"
+                            (change)="methodChanged($event)"
+                            name="dateField"
+                        >
+                            <option value="" selected></option>
+                            @for (method of methodsMockData; track method) {
+                                <option [value]="method.value">{{method.viewValue}}</option>
+                            }
+                        </select>
                 </mat-form-field>
+
+                <div *ngIf="(sectionType$ | async) === 'Stair'" id="show-methods-info">
+                    <mat-icon aria-hidden="false" aria-label="Methods info" (click)="showMethodsInfo()" fontIcon="info">info</mat-icon>
+                </div>
 
                 <div *ngIf="(sectionType$ | async) === 'Stair'">
                     <mat-checkbox id="notch" class="order-details-notch" color="primary"
                     formControlName="notch">Notch</mat-checkbox>
-                    <mat-checkbox id="headroomMatters" class="order-details-headroom-matters" color="primary"
+
+                    <mat-checkbox (change)="headroomMattersChanged($event)" id="headroomMatters" class="order-details-headroom-matters" color="primary"
                     formControlName="headroomMatters">Headroom Matters</mat-checkbox>
-                    <mat-checkbox id="offTheTop" class="order-details-off-the-top" color="primary"
+
+                    <mat-checkbox (change)="offTheTopChanged($event)" id="offTheTop" class="order-details-off-the-top" color="primary"
                     formControlName="offTheTop">Off The Top</mat-checkbox>
                 </div>
                 <div *ngIf="(sectionType$ | async) === 'Stair'">
@@ -148,17 +179,13 @@
                     formControlName="furred">3rd and Furred</mat-checkbox>
                 </div>
 
-                <!-- <mat-form-field *ngIf="data.SectionType !== 'Winder' && data.SectionType !== 'Landing'" class="order-details-materials details-width">
-                    <mat-label for="materials">Materials</mat-label>
-                    <input id="materials" matInput type="text" formControlName="materials" placeholder="Ex. plywood, spruce stingers" />
-                </mat-form-field> -->
-
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'">
                     <mat-label>Materials</mat-label>
                         <select matNativeControl 
                             [ngModelOptions]="{standalone: true}"
                             [(ngModel)]="selectedMaterialsField" 
                             name="dateField"
+                            [disabled]="materialsDisabled"
                         >
                             <option value="" selected></option>
                             @for (materialField of materialFields; track materialField) {
@@ -167,14 +194,32 @@
                         </select>
                 </mat-form-field>
 
-                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-materials">
-                    <mat-label for="stringerStyle1">Stringer Style 1</mat-label>
-                    <input id="stringerStyle1" matInput type="text" formControlName="stringerStyle1" placeholder="Ex. plywood, spruce stingers" />
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'">
+                    <mat-label>Stringer Style 1</mat-label>
+                        <select matNativeControl 
+                            [ngModelOptions]="{standalone: true}"
+                            [(ngModel)]="selectedStringerStyle1Field" 
+                            name="dateField"
+                        >
+                            <option value="" selected></option>
+                            @for (stringerStyle of stringerStylesFields; track stringerStyle) {
+                                <option [value]="stringerStyle.value">{{stringerStyle.viewValue}}</option>
+                            }
+                        </select>
                 </mat-form-field>
 
-                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-materials">
-                    <mat-label for="stringerStyle2">Stringer Style 2</mat-label>
-                    <input id="stringerStyle2" matInput type="text" formControlName="stringerStyle2" placeholder="Ex. plywood, spruce stingers" />
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'">
+                    <mat-label>Stringer Style 2</mat-label>
+                        <select matNativeControl 
+                            [ngModelOptions]="{standalone: true}"
+                            [(ngModel)]="selectedStringerStyle2Field" 
+                            name="dateField"
+                        >
+                            <option value="" selected></option>
+                            @for (stringerStyle of stringerStylesFields; track stringerStyle) {
+                                <option [value]="stringerStyle.value">{{stringerStyle.viewValue}}</option>
+                            }
+                        </select>
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-divisor">
@@ -245,6 +290,33 @@
                         <input id="winderSeatLength" matInput type="text" formControlName="winderSeatLength" placeholder="Ex. 0" />
                     </mat-form-field>
                 </div>
+
+                <!-- OPTIONAL INPUTS -->
+
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair' && (garage$ | async)" class="order-details-sill">
+                    <mat-label for="sill">Sill for Garage</mat-label>
+                    <input id="sill" (change)="numberFieldChanged($event)"  matInput type="text" formControlName="sill" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair' && (offTheTop$ | async)" class="order-details-off-the-top-val">
+                    <mat-label for="offTheTopVal">Off The Top Value</mat-label>
+                    <input id="offTheTopVal" (change)="numberFieldChanged($event)"  matInput type="text" formControlName="offTheTopVal" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair' && (headroomMatters$ | async)" class="order-details-off-the-top-val">
+                    <mat-label for="opening">Headroom Length</mat-label>
+                    <input id="opening" (change)="numberFieldChanged($event)"  matInput type="text" formControlName="opening" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair' && (headroomMatters$ | async)" class="order-details-off-the-top-val">
+                    <mat-label for="joist">Headroom Height</mat-label>
+                    <input id="joist" (change)="numberFieldChanged($event)"  matInput type="text" formControlName="joist" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair' && (headroomMatters$ | async)" class="order-details-off-the-top-val">
+                    <mat-label for="headroomTotal">Headroom Total</mat-label>
+                    <input id="headroomTotal" (change)="numberFieldChanged($event)"  matInput type="text" formControlName="headroomTotal" placeholder="Ex. 27230" />
+                </mat-form-field>
             </form>
         </section>
     </mat-tab>
@@ -255,22 +327,22 @@
                     <mat-checkbox id="connected" class="order-connected" color="primary"
                     formControlName="connected">This staircase is connected to others</mat-checkbox>
                 </div>
+                
                 <mat-form-field class="order-details-total-height">
                     <mat-label for="totalHeight">Total Height</mat-label>
                     <input id="totalHeight" matInput type="text" formControlName="totalHeight" placeholder="Ex. 0" />
                 </mat-form-field>
+                
                 <mat-form-field class="order-details-count-in-height">
                     <mat-label for="countStairsInHeight"># of Staircases In Height</mat-label>
                     <input id="countStairsInHeight" matInput type="text" formControlName="countStairsInHeight" placeholder="Ex. 0" />
                 </mat-form-field>
+                
                 <mat-form-field class="order-details-count-od-winders">
                     <mat-label for="countWindersAndLandings"># of Winders and Landing</mat-label>
                     <input id="countWindersAndLandings" matInput type="text" formControlName="countWindersAndLandings" placeholder="Ex. 0" />
                 </mat-form-field>
-                <!-- <mat-form-field class="order-details-divisor">
-                    <mat-label for="connectedTo">Connected to</mat-label>
-                    <input id="connectedTo" matInput type="text" formControlName="connectedTo" placeholder="Ex. 0" />
-                </mat-form-field> -->
+
                 <mat-form-field>
                     <mat-label>Connected to</mat-label>
                     <mat-select [formControl]="connectedStairs" multiple>
@@ -324,15 +396,22 @@
                     hidden
                     #fileInput
                 />
-                <div class="file-dropper" (click)="fileInput.click()">
-                    <div class="order-image-buttons"><mat-icon>upload</mat-icon><span>Choose Image</span></div>
+                <div class="file-dropper">
+                    <div class="order-image-buttons" (click)="fileInput.click()"><mat-icon>upload</mat-icon><span>Choose Image</span></div>
                     <div *ngIf="imageName() || imagePreview()">
-                        <div *ngIf="selectedFile || imagePreview">
-                            <img
+                        <div *ngIf="selectedFile || imagePreview()">
+                            <!-- <img
                                 [src]="imagePreview()"
                                 alt="Image Preview"
                                 class="image-preview"
-                            />
+                            /> -->
+                            <div class="slider-container image-preview" *ngIf="data.Images.length || uploadSuccess">
+                                <button *ngIf="data.Images.length > 1" class="button-sldr button-sldr-prev" (click)="prevImageImgsWndw()">&#10094;</button>
+                                
+                                <img [src]="imagePreview()" class="slider-image" alt="Slider Image">
+                                
+                                <button *ngIf="data.Images.length > 1" class="button-sldr button-sldr-next" (click)="nextImageImgsWndw()">&#10095;</button>
+                            </div>
                             <p *ngIf="fileSize()">
                                 <span class="image-name">{{ imageName() }}</span> ({{
                                     fileSize()
@@ -342,7 +421,7 @@
                     </div>
                 </div>
                 <div class="order-image-buttons" *ngIf="selectedFile || imagePreview()" (click)="removeImage()"><mat-icon class="delete-icon">cancel</mat-icon><span>Remove Image</span></div>
-                <div class="order-image-buttons" *ngIf="selectedFile || imagePreview()" (click)="upload()"><mat-icon class="publish-icon">upload_file</mat-icon><span>Save Image</span></div>
+                <div class="order-image-buttons" *ngIf="uploadSuccess && (selectedFile || imagePreview())" (click)="upload()"><mat-icon class="publish-icon">upload_file</mat-icon><span>Save Image</span></div>
             </div>
         </section>
     </mat-tab>

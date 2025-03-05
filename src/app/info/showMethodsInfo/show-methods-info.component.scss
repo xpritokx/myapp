@@ -1,0 +1,20 @@
+mat-dialog-container {
+    background-color: rgb(255, 255, 255) !important;
+}
+
+::ng-deep .mdc-text-field--disabled input {
+    color: black !important; 
+ }
+
+::ng-deep .mdc-text-field, ::ng-deep .mat-mdc-dialog-surface {
+    background-color: white !important;
+}
+
+.text-area {
+    text-align: center;
+}
+
+.subsection-title {
+    width: 100%;
+    text-align: center;
+}

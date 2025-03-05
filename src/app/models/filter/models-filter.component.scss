@@ -1,0 +1,11 @@
+.mat-mdc-form-field {
+    padding: 10px;
+}
+
+mat-dialog-container {
+    background-color: rgb(255, 255, 255) !important;
+}
+
+::ng-deep .mdc-text-field, ::ng-deep .mat-mdc-dialog-surface {
+    background-color: white !important;
+}

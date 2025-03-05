@@ -1,0 +1,85 @@
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    width: 80px;
+}
+
+.button-row-col {
+    width: 80px;
+}
+
+.button-row .mat-mdc-button-base {
+    margin: 8px 8px 8px 0;
+}
+
+.models-section {
+    height: 750px;
+    overflow: auto;
+}
+
+.spinning-loader {
+    margin-top: 350px;
+}
+
+.mat-mdc-table-sticky-border-elem-right {
+    border-left: 1px solid #e0e0e0;
+}
+
+::ng-deep .mat-sort-header-arrow {
+    display: none;
+}
+
+.add-new-btn {
+    left: 200px;
+    top: 10px;
+    position: absolute;
+}
+
+.filter-btn {
+    left: 200px;
+    top: 10px;
+    position: absolute;
+}
+
+.filter-btn-off {
+    left: 250px;
+    top: 10px;
+    position: absolute;
+    background-color: rgb(218, 15, 0);
+}
+
+.add-new-btn-mobile {
+    left: 160px;
+    top: 7px;
+    position: absolute;
+}
+
+.filter-btn-mobile  {
+    left: 210px;
+    top: 7px;
+    position: absolute;
+}
+
+.filter-btn-off-mobile  {
+    left: 260px;
+    top: 7px;
+    position: absolute;
+    background-color: rgb(218, 15, 0);
+}
+
+.filter-container {
+    left: 350px;
+    top: 5px;
+    position: absolute;
+    font-size: 10px;
+}
+
+.search-params-enabled {
+    background-color: green;
+}

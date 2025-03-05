@@ -9,7 +9,7 @@ import { Router } from '@angular/router';
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <section  class="home-form">
-        <h1 class="home-title"> Home </h1>
+        <h1 class="home-title">Welcome to Stairs CRM</h1>
     </section>
   `,
   styleUrls: ['./home.component.scss'],

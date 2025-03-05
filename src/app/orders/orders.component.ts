@@ -8,11 +8,13 @@ import { Sort, MatSort, MatSortModule } from '@angular/material/sort';
 import { PageEvent, MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { DeviceDetectorService } from 'ngx-device-detector';
+import { Observable, BehaviorSubject } from 'rxjs';
 
 import { OrdersService } from '../../services/orders.service';
 
 import { IOrder } from '../../interfaces/order.interface';
 
+import { ErrorDialogWindow } from '../error/error-dialog.component';
 import { AddOrderDialogComponent } from './add/add-order.component';
 import { EditOrderDialogComponent } from './edit/edit-order.component';
 import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
@@ -31,7 +33,7 @@ import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
   ],
   template: `
     <section class="orders-section">
-        <table *ngIf="!isLoading" mat-table [dataSource]="dataSource" class="mat-elevation-z8 table-content" (matSortChange)="sortData($event)" matSort>
+        <table *ngIf="!(loading$ | async)" mat-table [dataSource]="dataSource" class="mat-elevation-z8 table-content" (matSortChange)="sortData($event)" matSort>
             <ng-container matColumnDef="OrderNum">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Order Num </th>
                 <td mat-cell *matCellDef="let element"> {{element.OrderNum}} </td>
@@ -121,7 +123,7 @@ import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
             <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
             <tr (click) = "openEditDialog(row)" mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
-        <div *ngIf="isLoading" class="spinning-loader" style="display: flex; justify-content: center; align-items: center; background: white;">
+        <div *ngIf="loading$ | async" class="spinning-loader" style="display: flex; justify-content: center; align-items: center; background: white;">
             <mat-progress-spinner
                 color="primary" 
                 mode="indeterminate">
@@ -167,6 +169,8 @@ import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
 export class OrdersComponent {
     readonly dialog = inject(MatDialog);
     public readonly deviceDetectorService = inject(DeviceDetectorService);
+    public loading$ = new BehaviorSubject<boolean>(false);
+
     ordersService = inject(OrdersService);
 
     searchParams = {
@@ -216,7 +220,6 @@ export class OrdersComponent {
 
     dataSource!: MatTableDataSource<IOrder>;
     total: number = 0;
-    isLoading: boolean = false;
 
     @ViewChild(MatPaginator)
     paginator!: MatPaginator;
@@ -233,22 +236,32 @@ export class OrdersComponent {
     }
 
     async getOrders() {
-        this.isLoading = true;
-        const orders: {
-            data: IOrder[];
-            total: number;
-        } = await this.ordersService.getOrdersList(
-            this.pageSize,
-            this.pageIndex,
-            this.sortingColumn,
-            this.sortingDirection,
-            this.searchParams
-        );
+        this.loading$.next(true);
 
-        this.isLoading = false;
-        this.total = orders?.total || 0;
+        try {
+            const orders: {
+                data: IOrder[];
+                total: number;
+            } = await this.ordersService.getOrdersList(
+                this.pageSize,
+                this.pageIndex,
+                this.sortingColumn,
+                this.sortingDirection,
+                this.searchParams
+            );
 
-        this.dataSource = new MatTableDataSource(orders?.data || []);
+            this.loading$.next(false);
+            this.total = orders?.total || 0;
+
+            this.dataSource = new MatTableDataSource(orders?.data || []);
+        } catch (err: any) {
+            this.loading$.next(false);
+            this.dialog.open(ErrorDialogWindow, {
+                data: {
+                    errorMessage: err.error
+                }
+            });
+        }
     }
 
     openEditDialog(order: IOrder) {
@@ -270,19 +283,6 @@ export class OrdersComponent {
         this.dataSource.paginator = this.paginator;
         this.dataSource.sort = this.sort;
     }
-
-    /* openDeleteDialog(order: IOrder) {
-        console.log('--DEBUG-- delete dialog opened: ', order);
-        const dialogRef = this.dialog.open(DeleteOrderDialogComponent, {
-            data: {
-                ID: order.ID,
-            }
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            console.log(`--DEBUG-- delete dialog result: ${result}`);
-        });
-    } */
 
     handlePageEvent(e: PageEvent) {
         console.log('--DEBUG-- handlePageEvent: ', e);
@@ -309,7 +309,11 @@ export class OrdersComponent {
     add() {
         console.log('--DEBUG-- add dialog opened!');
 
-        const dialogRef = this.dialog.open(AddOrderDialogComponent);
+        const dialogRef = this.dialog.open(AddOrderDialogComponent, {
+            data: {
+                quote: false,
+            }
+        });
 
         dialogRef.afterClosed().subscribe(result => {
             console.log(`--DEBUG-- add dialog result:`, result);

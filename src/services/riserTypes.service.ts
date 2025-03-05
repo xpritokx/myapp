@@ -18,7 +18,11 @@ export class RiserTypesService {
         let url = `riserTypes`;
 
         return new Promise((resolve, reject) => {
-            this.httpService.get(url,  (result: any) => {
+            this.httpService.get(url,  (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+                
                 resolve(result);
             });
         });

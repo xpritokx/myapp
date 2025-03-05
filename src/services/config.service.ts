@@ -14,7 +14,11 @@ export class ConfigService {
 
     getConfig(): Promise<IConfig> {
         return new Promise((resolve, reject) => {
-            this.httpService.get('config',  (result: any) => {
+            this.httpService.get('config',  (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 resolve(result);
             });
         });

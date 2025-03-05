@@ -11,6 +11,7 @@ export interface IOrder {
     Height: number;
     Width: number;
     HeadroomMatters: number;
+    quote?: boolean;
 }
 
 export interface IOrderSearchParams {

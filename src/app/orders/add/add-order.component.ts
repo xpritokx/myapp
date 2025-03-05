@@ -3,17 +3,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, FormControl, FormGroup, ReactiveFormsModule  } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatIconModule } from '@angular/material/icon';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 
 import { IOrder } from '../../../interfaces/order.interface';
+
+import { CreateCustomerDialogComponent } from '../../customers/add/add-customer.component';
+import { CreateModelDialogComponent } from '../../models/add/add-model.component'; 
+import { ErrorDialogWindow } from '../../error/error-dialog.component';
 
 import { CustomersService } from '../../../services/customers.service';
 import { ModelsService } from '../../../services/models.service';
@@ -22,16 +27,16 @@ import { OrdersService } from '../../../services/orders.service';
 @Component({
     selector: 'dialog-add-order',
     template: `
-        <h2 mat-dialog-title class="mat-dialog-title">New Order</h2>
+        <h2 mat-dialog-title class="mat-dialog-title">New {{ quote ? 'Quote' : 'Order'}}</h2>
         <mat-dialog-content class="mat-typography">
             <section *ngIf="!(loading$ | async)" class="create-orders-form">
                 <form [formGroup]="orderCreateForm">
-                    <div class="create-order-quote">
+                    <!-- <div class="create-order-quote">
                         <mat-checkbox id="quote" color="primary"
                             formControlName="quote">Quote</mat-checkbox>
-                    </div>
+                    </div> -->
 
-                    <mat-form-field class="create-order-customer full-width">
+                    <mat-form-field class="create-order-customer full-width-by-quarter">
                         <mat-label>Customer</mat-label>
                         <input type="text"
                             placeholder="Pick one"
@@ -45,18 +50,11 @@ import { OrdersService } from '../../../services/orders.service';
                             }
                         </mat-autocomplete>
                     </mat-form-field>
+                    <button class="add-new-customer-btn" (click)="openAddNewCustomerDialog()" mat-mini-fab>
+                        <mat-icon>add</mat-icon>
+                    </button>
 
-                    <mat-form-field class="create-order-delivery-address">
-                        <mat-label for="deliveryAddress">Delivery Address</mat-label>
-                        <input id="deliveryAddress" matInput type="text" formControlName="deliveryAddress" placeholder="Ex. 27230" />
-                    </mat-form-field>
-
-                    <mat-form-field class="create-order-billing-address">
-                        <mat-label for="billingAddress">Billing Address</mat-label>
-                        <input id="billingAddress" matInput type="text" formControlName="billingAddress" placeholder="Ex. 27230" />
-                    </mat-form-field>
-
-                    <mat-form-field class="create-order-model full-width">
+                    <mat-form-field class="create-order-model full-width-by-quarter">
                         <mat-label>Model</mat-label>
                         <input type="text"
                             placeholder="Pick one"
@@ -69,6 +67,19 @@ import { OrdersService } from '../../../services/orders.service';
                                 <mat-option [value]="modelOption">{{ modelOption.viewValue }}</mat-option>
                             }
                         </mat-autocomplete>
+                    </mat-form-field>
+                    <button class="add-new-model-btn" (click)="openAddNewModelDialog()" mat-mini-fab>
+                        <mat-icon>add</mat-icon>
+                    </button>
+
+                    <mat-form-field class="create-order-delivery-address">
+                        <mat-label for="deliveryAddress">Delivery Address</mat-label>
+                        <input id="deliveryAddress" matInput type="text" formControlName="deliveryAddress" placeholder="Ex. 27230" />
+                    </mat-form-field>
+
+                    <mat-form-field class="create-order-billing-address">
+                        <mat-label for="billingAddress">Billing Address</mat-label>
+                        <input id="billingAddress" matInput type="text" formControlName="billingAddress" placeholder="Ex. 27230" />
                     </mat-form-field>
 
                     <mat-form-field>
@@ -115,6 +126,7 @@ import { OrdersService } from '../../../services/orders.service';
     imports: [
         CommonModule,
         FormsModule,
+        MatIconModule,
         MatTableModule,
         MatDialogModule, 
         MatButtonModule,
@@ -131,10 +143,12 @@ import { OrdersService } from '../../../services/orders.service';
 })
 export class AddOrderDialogComponent implements OnInit {
     public loading$ = new BehaviorSubject<boolean>(false);
+    readonly dialog = inject(MatDialog);
     dataSource: MatTableDataSource<any> = new MatTableDataSource();
     customersService = inject(CustomersService);
     ordersService = inject(OrdersService);
     modelsService = inject(ModelsService);
+    quote: boolean = false;
 
     customersForSelect: {
         value: number,
@@ -144,7 +158,18 @@ export class AddOrderDialogComponent implements OnInit {
     modelsForSelect: {
         value: number,
         viewValue: string
-    }[] = [];
+    }[] = [
+        {value: 1, viewValue: 'General: 1'},
+        {value: 2, viewValue: 'General: 2'},
+        {value: 3, viewValue: 'General: 3'},
+        {value: 4, viewValue: 'General: 4'},
+        {value: 5, viewValue: 'General: 5'},
+        {value: 6, viewValue: 'General: 6'},
+        {value: 7, viewValue: 'General: 7'},
+        {value: 8, viewValue: 'General: 8'},
+        {value: 9, viewValue: 'General: 9'},
+        {value: 10, viewValue: 'General: 10'}
+    ];
 
     filteredCustomersOptions: Observable<any[]> | undefined;
     filteredModelsOptions: Observable<any[]> | undefined;
@@ -153,8 +178,10 @@ export class AddOrderDialogComponent implements OnInit {
     selectedModel: string = '';
 
     customer = new FormControl('');
-    customerID = 0;
     model = new FormControl('');
+
+    customerID:number = 0;
+    modelID:number = 0;
 
     orderCreateForm = new FormGroup({
         quote: new FormControl(false),
@@ -168,14 +195,15 @@ export class AddOrderDialogComponent implements OnInit {
     });
 
     constructor(
-        @Inject(MAT_DIALOG_DATA) public data: IOrder,
+        @Inject(MAT_DIALOG_DATA) public data: any,
         public dialogRef: MatDialogRef<any>
-    ) {}
+    ) {
+        this.quote = data.quote;
+    }
 
     ngOnInit() {
         Promise.all([
             this.getCustomers(),
-            this.getModels()
         ]).then(result => {
             this.filteredModelsOptions = this.model.valueChanges.pipe(
                 startWith(''),
@@ -215,6 +243,7 @@ export class AddOrderDialogComponent implements OnInit {
         
         if (value?.viewValue) {
             filterValue = value?.viewValue?.toLowerCase();
+            this.modelID = value?.value;
         } else if (value) {
             filterValue = value.toLowerCase();
         }
@@ -222,32 +251,96 @@ export class AddOrderDialogComponent implements OnInit {
         let filterResult = this.modelsForSelect.filter(option => option.viewValue.toLowerCase().includes(filterValue));
         if (typeof this.model.value === 'object') {
             let modelValue: any = this.model.value;
+            let viewValue: string = modelValue?.viewValue || '';
+            let indicators: any = viewValue.split(': ');
 
-            this.model.setValue(modelValue?.viewValue || '')
+            let numbersOfStairsElem = this.orderCreateForm.get('numbersOfStairs');
+
+            if (indicators.length === 2 && indicators[0] === 'General') {
+                let number = Number(indicators[1]);
+
+                numbersOfStairsElem?.setValue(number);
+                numbersOfStairsElem?.disable();
+            } else {
+                numbersOfStairsElem?.setValue(0);
+                numbersOfStairsElem?.enable();
+            }
+
+            this.model.setValue(viewValue)
         }
 
         return filterResult;
     }
 
+    async openAddNewCustomerDialog() {
+        console.log('--DEBUG-- open add new customer dialog');
+
+        const dialogRef = this.dialog.open(CreateCustomerDialogComponent);
+
+        dialogRef.afterClosed().subscribe(async result => {
+            console.log(`--DEBUG-- add new customer dialog result:`, result);
+
+            if (result && result.status === 'updated') {
+                this.getCustomers();
+                if (result.id) {
+                    this.model.setValue(result.name);
+                    this.customerID = result.id;
+                }
+            }
+        });
+    }
+
+    async openAddNewModelDialog() {
+        console.log('--DEBUG-- open add new model dialog');
+
+        const dialogRef = this.dialog.open(CreateModelDialogComponent, {data: {}});
+
+        dialogRef.afterClosed().subscribe(async result => {
+            console.log(`--DEBUG-- add new model dialog result:`, result);
+
+            if (result && result.status === 'updated') {
+                //await this.getModels();
+                this.modelsForSelect.push({
+                    value: result.id,
+                    viewValue: result.name
+                });
+
+                if (result.id) {
+                    this.model.setValue(result.name);
+                    this.modelID = result.id;
+                }
+            }
+        });
+    }
+
     async getCustomers() {
         this.loading$.next(true);
 
-        const customers: {
-            data: any[];
-            total: number;
-        } = await this.customersService.getCustomersByName('');
-
-        this.customersForSelect = customers.data.map(customer => {
-            return {
-                value: customer.ID,
-                viewValue: customer.Name
-            }
-        });
-
-        this.loading$.next(false);
+        try {
+            const customers: {
+                data: any[];
+                total: number;
+            } = await this.customersService.getCustomersByName('');
+    
+            this.customersForSelect = customers.data.map(customer => {
+                return {
+                    value: customer.ID,
+                    viewValue: customer.Name
+                }
+            });
+            
+            this.loading$.next(false);
+        } catch (err: any) {
+            this.loading$.next(false);
+            this.dialog.open(ErrorDialogWindow, {
+                data: {
+                    errorMessage: err.error
+                }
+            });
+        }
     }
 
-    async getModels() {
+    /* async getModels() {
         this.loading$.next(true);
 
         const models: {
@@ -262,40 +355,65 @@ export class AddOrderDialogComponent implements OnInit {
             }
         });
 
+        this.modelsForSelect = [
+            {value: 1, viewValue: 'General: 1'},
+            {value: 2, viewValue: 'General: 2'},
+            {value: 3, viewValue: 'General: 3'},
+            {value: 4, viewValue: 'General: 4'},
+            {value: 5, viewValue: 'General: 5'},
+            {value: 6, viewValue: 'General: 6'},
+            {value: 7, viewValue: 'General: 7'},
+            {value: 8, viewValue: 'General: 8'},
+            {value: 9, viewValue: 'General: 9'},
+            {value: 10, viewValue: 'General: 10'}
+        ];
+
         this.loading$.next(false);
-    }
+    } */
 
     async add() {
         this.loading$.next(true);
 
+        console.log('--DEBUG-- selected model: ', this.selectedModel);
+        console.log('--DEBUG-- selected customer: ', this.selectedCustomer);
+
         console.log('--DEBUG-- dialog add!', {
             "customer": this.customerID,
-            "quote": this.orderCreateForm.get('quote')?.value,
+            "quote": this.quote, //this.orderCreateForm.get('quote')?.value,
             "deliveryAddress": this.orderCreateForm.get('deliveryAddress')?.value,
             "billingAddress": this.orderCreateForm.get('billingAddress')?.value,
             "deliveryDate": this.orderCreateForm.get('deliveryDate')?.value,
-            "model": this.selectedModel,
+            "model": this.modelID,
             "jobNum": this.orderCreateForm.get('job')?.value,
             "po": this.orderCreateForm.get('po')?.value,
             "numOfStairs": this.orderCreateForm.get('numbersOfStairs')?.value,
             "input": this.orderCreateForm.get('input')?.value
         });
 
-        let result = await this.ordersService.createOrder({
-            "customer": this.customerID,
-            "quote": this.orderCreateForm.get('quote')?.value,
-            "deliveryAddress": this.orderCreateForm.get('deliveryAddress')?.value,
-            "billingAddress": this.orderCreateForm.get('billingAddress')?.value,
-            "deliveryDate": this.orderCreateForm.get('deliveryDate')?.value,
-            "model": this.selectedModel,
-            "jobNum": this.orderCreateForm.get('job')?.value,
-            "po": this.orderCreateForm.get('po')?.value,
-            "numOfStairs": this.orderCreateForm.get('numbersOfStairs')?.value,
-            "input": this.orderCreateForm.get('input')?.value
-        });
-
-        this.loading$.next(false);
-
-        this.dialogRef.close(result);
+        try {
+            let result = await this.ordersService.createOrder({
+                "customer": this.customerID,
+                "quote":  this.quote, // this.orderCreateForm.get('quote')?.value,
+                "deliveryAddress": this.orderCreateForm.get('deliveryAddress')?.value,
+                "billingAddress": this.orderCreateForm.get('billingAddress')?.value,
+                "deliveryDate": this.orderCreateForm.get('deliveryDate')?.value,
+                "model": this.modelID,
+                "jobNum": this.orderCreateForm.get('job')?.value,
+                "po": this.orderCreateForm.get('po')?.value,
+                "numOfStairs": this.orderCreateForm.get('numbersOfStairs')?.value,
+                "input": this.orderCreateForm.get('input')?.value
+            });
+    
+            this.loading$.next(false);
+    
+            this.dialogRef.close(result);
+        } catch (err: any) {
+            this.loading$.next(false);
+            this.dialog.open(ErrorDialogWindow, {
+                data: {
+                    errorMessage: err.error
+                }
+            });
+        }
     }
 }

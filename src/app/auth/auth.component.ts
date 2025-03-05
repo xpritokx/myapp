@@ -5,8 +5,11 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { logoutButtonEnable } from '../../actions/buttons.actions';
 import { Router } from '@angular/router';
-import { IAuthResponse } from '../../interfaces/auth.interface';
+import { MatDialog } from '@angular/material/dialog';
 
+import { ErrorDialogWindow } from '../error/error-dialog.component';
+
+import { IAuthResponse } from '../../interfaces/auth.interface';
 @Component({
   selector: 'app-auth',
   imports: [CommonModule, ReactiveFormsModule],
@@ -25,26 +28,36 @@ import { IAuthResponse } from '../../interfaces/auth.interface';
   styleUrls: ['./auth.component.scss'],
 })
 export class AuthComponent {
-  authService = inject(AuthService);
-  authForm = new FormGroup({
-    username: new FormControl(''),
-    password: new FormControl(''),
-  });
+    readonly dialog = inject(MatDialog);
 
-  constructor(
-    private store: Store<{ count: boolean }>,
-    private router: Router
-  ) {}
+    authService = inject(AuthService);
+    authForm = new FormGroup({
+        username: new FormControl(''),
+        password: new FormControl(''),
+    });
 
-  async signIn() {
-    const result: IAuthResponse = await this.authService.signIn(
-      this.authForm.value.username ?? '',
-      this.authForm.value.password ?? '',
-    );
+    constructor(
+        private store: Store<{ count: boolean }>,
+        private router: Router
+    ) {}
 
-    if (result?.token) {
-      this.store.dispatch(logoutButtonEnable());
-      this.router.navigate(['/home']);
+    async signIn() {
+        try {
+            const result: IAuthResponse = await this.authService.signIn(
+                this.authForm.value.username ?? '',
+                this.authForm.value.password ?? '',
+            );
+
+            if (result?.token) {
+                this.store.dispatch(logoutButtonEnable());
+                this.router.navigate(['/home']);
+            }
+        } catch (err: any) {
+            this.dialog.open(ErrorDialogWindow, {
+                data: {
+                    errorMessage: err.error
+                }
+            });
+        }
     }
-  }
 }

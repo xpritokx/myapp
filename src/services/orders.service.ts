@@ -31,7 +31,11 @@ export class OrdersService {
         }
 
         return new Promise((resolve, reject) => {
-            this.httpService.get(url,  (result: any) => {
+            this.httpService.get(url,  (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 resolve(result);
             });
         });
@@ -46,7 +50,30 @@ export class OrdersService {
         const url = `orders/${number}`;
 
         return new Promise((resolve, reject) => {
-            this.httpService.get(url,  (result: any) => {
+            this.httpService.get(url,  (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
+                resolve(result);
+            });
+        });
+    };
+
+    getSalesOrdersByOrderNumber(
+        number: number
+    ): Promise<{
+        data: any[],
+        total: number,
+    }> {
+        const url = `orders/sales/${number}`;
+
+        return new Promise((resolve, reject) => {
+            this.httpService.get(url,  (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 resolve(result);
             });
         });
@@ -60,7 +87,11 @@ export class OrdersService {
         const url = `orders`;
 
         return new Promise((resolve, reject) => {
-            this.httpService.post(url, data, (result: any) => {
+            this.httpService.post(url, data, (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 resolve(result);
             })
         });
@@ -73,7 +104,11 @@ export class OrdersService {
         const url = `orders/stair`;
 
         return new Promise((resolve, reject) => {
-            this.httpService.post(url, data, (result: any) => {
+            this.httpService.post(url, data, (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 resolve(result);
             })
         });
@@ -85,7 +120,11 @@ export class OrdersService {
         const url = `orders/order/${number}`;
 
         return new Promise((resolve, reject) => {
-            this.httpService.delete(url,  (result: any) => {
+            this.httpService.delete(url,  (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+                
                 resolve(result);
             });
         });
@@ -99,7 +138,11 @@ export class OrdersService {
         const url = `orders/stair/${number}?orderNumber=${orderNum}&stairsCount=${stairsCount}`;
 
         return new Promise((resolve, reject) => {
-            this.httpService.delete(url,  (result: any) => {
+            this.httpService.delete(url,  (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 resolve(result);
             });
         });
@@ -113,8 +156,11 @@ export class OrdersService {
         console.log('--DEBUG-- url: ', url);
 
         return new Promise((resolve, reject) => {
-            this.httpService.put(url, data, (result: any) => {
-                console.log('--DEBUG-- updateStair ', result);
+            this.httpService.put(url, data, (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 resolve(result);
             })
         });
@@ -128,20 +174,28 @@ export class OrdersService {
         console.log('--DEBUG-- url: ', url);
 
         return new Promise((resolve, reject) => {
-            this.httpService.post(url, data, (result: any) => {
-                console.log('--DEBUG-- create image ', result);
+            this.httpService.post(url, data, (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
                 resolve(result);
             })
         });
     }
 
     removeImage(
+        orderNum: string,
         id: string
     ) {
-        const url = `orders/image/${id}`;
+        const url = `orders/image/${orderNum}/${id}`;
 
         return new Promise((resolve, reject) => {
-            this.httpService.delete(url,  (result: any) => {
+            this.httpService.delete(url,  (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+                
                 resolve(result);
             });
         });

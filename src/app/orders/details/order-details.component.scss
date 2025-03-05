@@ -1,10 +1,76 @@
-#order-details-updated-label {
+#order-details-updated-label, #order-details-image-uploaded-label {
     font-size: 14px;
     color: rgb(2, 145, 2);
 }
+
+#order-details-image-uploading-failed-label {
+    font-size: 14px;
+    color: rgb(255, 2, 2);
+}
  
-::ng-deep .cdk-overlay-pane.mat-mdc-dialog-panel  {
-    min-height: 635px !important;
+#show-methods-info {
+    display: inline-block;
+    margin-left: 5px;
+}
+
+#show-methods-info:hover  {
+    color: rgb(68, 68, 68);
+}
+
+.order-details-method {
+    max-width: 180px;
+}
+
+::ng-deep .stair-detail-dialog {
+    .cdk-overlay-pane.mat-mdc-dialog-panel  {
+        min-height: 635px !important;
+    }
+} 
+
+.eighty-precent-width {
+    width: 80%;
+    min-width: 320px;
+}
+
+.slider-container {
+    position: relative;
+    max-width: 500px;
+    max-height: 400px;
+    margin: auto;
+    overflow: hidden;
+    text-align: center;
+}
+  
+.slider-image {
+    width: 100%;
+    max-width: 200px;
+    max-height: 300px;
+    height: auto;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.button-sldr {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.button-sldr-prev {
+    left: 10px;
+}
+
+.button-sldr-next {
+    right: 10px;
+}
+
+.button-sldr:hover {
+    background: rgba(0, 0, 0, 0.8);
 }
 
 .publish-icon {

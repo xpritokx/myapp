@@ -2,6 +2,9 @@ import { Routes } from '@angular/router';
 import { AuthComponent } from './auth/auth.component';
 import { HomeComponent } from './home/home.component';
 import { OrdersComponent } from './orders/orders.component';
+import { QuotesComponent } from './quotes/quotes.component';
+import { CustomerComponent } from './customers/customer.component';
+import { ModelsComponent } from './models/models.component';
 
 const routeConfig: Routes = [
     {
@@ -18,6 +21,21 @@ const routeConfig: Routes = [
         path: 'orders',
         component: OrdersComponent,
         title: 'Orders page',
+    },
+    {
+        path: 'quotes',
+        component: QuotesComponent,
+        title: 'Quotes page',
+    },
+    {
+        path: 'customers',
+        component: CustomerComponent,
+        title: 'Customers page',
+    },
+    {
+        path: 'models',
+        component: ModelsComponent,
+        title: 'Models page',
     },
     {
         path: 'home',

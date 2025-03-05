@@ -32,7 +32,8 @@ export class HTTPService {
                     callback(data);
                 },
                 'error': (e) => {
-                    callback(null, e);
+                    console.log('--DEBUG-- POST error: ', e.error);
+                    callback(null, e.error);
                 }
             }
         );
@@ -57,8 +58,8 @@ export class HTTPService {
                     callback(data);
                 },
                 'error': (e) => {
-                    console.log('--DEBUG-- PUT error: ', e);
-                    callback(null, e);
+                    console.log('--DEBUG-- PUT error: ', e && e.error || e);
+                    callback(null, e.error);
                 }
             }
         );
@@ -80,7 +81,8 @@ export class HTTPService {
                 callback(data);
             },
             'error': (e) => {
-                callback(null, e);
+                console.log('--DEBUG-- GET error: ', e.error);
+                callback(null, e.error);
             }
         });
     };
@@ -101,7 +103,8 @@ export class HTTPService {
                 callback(data);
             },
             'error': (e) => {
-                callback(null, e);
+                console.log('--DEBUG-- DELETE error: ', e.error);
+                callback(null, e.error);
             }
         });
     }

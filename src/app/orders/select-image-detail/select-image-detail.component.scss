@@ -1,0 +1,61 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.flair-left {
+    font-weight: bold;
+    position: absolute;
+    top: 70px;
+    left: 100px;
+}
+  
+.flair-right {
+    font-weight: bold;
+    position: absolute;
+    top: 70px;
+    left: 320px;
+}
+
+.bullnose-left {
+    font-weight: bold;
+    position: absolute;
+    top: 110px;
+    left: 470px;
+}
+
+.bullnose-right {
+    font-weight: bold;
+    position: absolute;
+    top: 180px;
+    left: 470px;
+}
+
+.flair-left-mob {
+    font-weight: bold;
+    position: absolute;
+    top: 110px;
+    left: 250px;
+}
+  
+.flair-right-mob {
+    font-weight: bold;
+    position: absolute;
+    top: 180px;
+    left: 250px;
+}
+
+.bullnose-left-mob {
+    font-weight: bold;
+    position: absolute;
+    top: 260px;
+    left: 250px;
+}
+
+.bullnose-right-mob {
+    font-weight: bold;
+    position: absolute;
+    top: 330px;
+    left: 250px;
+}

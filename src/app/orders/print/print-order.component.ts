@@ -14,6 +14,8 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatSelectModule } from '@angular/material/select';
 import { DomSanitizer } from '@angular/platform-browser';
 
+import { ErrorDialogWindow } from '../../error/error-dialog.component';
+
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib'
 
 @Component({
@@ -113,31 +115,46 @@ export class PrintOrderComponent implements OnInit {
     decimalToMixedFraction(decimal: number): string {
         if (Number.isInteger(decimal)) return decimal.toString(); // Return whole numbers directly
     
-        const wholePart = Math.floor(decimal);
-        let fractionalPart = decimal - wholePart;
+        const isNegative = decimal < 0;
+        const absoluteDecimal = Math.abs(decimal);
+        
+        const wholePart = Math.floor(absoluteDecimal); // Take only absolute whole part
+        let fractionalPart = absoluteDecimal - wholePart;
     
-        // Define common denominators (powers of 2 for accuracy)
-        const commonDenominators = [2, 4, 8, 16, 32, 64, 128];
+        const tolerance = 1e-9; // Small tolerance for floating-point precision issues
+        const maxDenominator = 128; // Limit denominator size for reasonable fractions
     
         let bestNumerator = 0, bestDenominator = 1;
         let minDifference = Number.MAX_VALUE;
     
-        for (const denom of commonDenominators) {
+        for (let denom = 2; denom <= maxDenominator; denom++) {
             const num = Math.round(fractionalPart * denom);
             const approxValue = num / denom;
             const difference = Math.abs(fractionalPart - approxValue);
     
-            if (difference < minDifference) {
+            if (difference < minDifference - tolerance) {
                 bestNumerator = num;
                 bestDenominator = denom;
                 minDifference = difference;
             }
         }
     
-        // If the fraction reduces to 0 (e.g., whole numbers)
-        if (bestNumerator === 0) return wholePart.toString();
+        // Reduce the fraction using the greatest common divisor (GCD)
+        const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
     
-        return `${wholePart} ${bestNumerator}/${bestDenominator}`;
+        const divisor = gcd(bestNumerator, bestDenominator);
+        bestNumerator /= divisor;
+        bestDenominator /= divisor;
+    
+        // If the fraction reduces to 0 (e.g., whole numbers)
+        if (bestNumerator === 0) return (isNegative ? "-" : "") + wholePart.toString();
+    
+        // Ensure correct sign placement
+        const result = bestNumerator === bestDenominator
+            ? (wholePart + 1).toString() // Handle cases like 1 4/4 -> 2
+            : `${wholePart} ${bestNumerator}/${bestDenominator}`;
+    
+        return isNegative ? `-${result}` : result;
     }
 
     pieceMaker(value: number) {
@@ -360,7 +377,17 @@ export class PrintOrderComponent implements OnInit {
                 rotate: degrees(90)
             });
 
-            page.drawText(`${this.decimalToMixedFraction(order.StairRun)}`, {
+            let run = this.decimalToMixedFraction(order.StairRun);
+
+            if (order.StairType === 2) {
+                run = '(2x10)';
+            }
+
+            if (order.StairType === 3) {
+                run = '(2x6)';
+            }
+
+            page.drawText(`${run}`, {
                 x: heightOfDocument,
                 y: height - 410,
                 size: tableFontSize,
@@ -370,6 +397,9 @@ export class PrintOrderComponent implements OnInit {
             });
 
             let adjRise = `${this.decimalToMixedFraction(order.AdjRise)}`;
+
+            if (order.Location === '5/4 PWF Deck') adjRise = '-1/16 B & T';
+
 
             if (adjRise.length < 8) {
                 adjRise = `   ${adjRise}`
@@ -404,7 +434,7 @@ export class PrintOrderComponent implements OnInit {
 
             page.drawText(`${order.StringerStyle}`, {
                 x: heightOfDocument,
-                y: height - 50,
+                y: height - 100,
                 size: tableFontSize,
                 font: courierFont,
                 color: rgb(0, 0, 0),
@@ -483,6 +513,7 @@ export class PrintOrderComponent implements OnInit {
         let imagesDistance = 0;
         let imageHeight = 570;
         let imageLabelHeight = 585;
+        let imageRowCount = 0;
         let imageCount = 0;
 
         if (heightOfDocument >= 435) {
@@ -492,26 +523,29 @@ export class PrintOrderComponent implements OnInit {
             imageHeight = 150;
             imageLabelHeight = 165;
             heightOfDocument = 35;
+        } else {
+            imageCount = 8;
         }
 
         for (let order of this.data.orders) {
             if (order.Images?.length) {
                 for (let img of order.Images) {
                     try {
-                        if (img.img.indexOf('image/png') !== -1) {
-                            console.log('--DEBUG-- png');
+                        if (img.img && img.img.indexOf('image/png') !== -1) {
+                            console.log('--DEBUG-- 1 png');
                             image = await pdfDoc.embedPng(this.base64ToArrayBuffer(img.img.split(',')[1]));
                         } else {
-                            console.log('--DEBUG-- jpg');
+                            console.log('--DEBUG-- 1 jpg');
                             image = await pdfDoc.embedJpg(this.base64ToArrayBuffer(img.img.split(',')[1]));
                         }
-                        console.log('--DEBUG-- image count: ', imageCount)
-                        if (imageCount >= 4) {
-                            imageCount = 0;
+
+                        if (imageRowCount >= 4) {
+                            imageRowCount = 0;
                             imageHeight += 175;
                             imageLabelHeight += 175;
                             imagesDistance = 0;
                         }
+                        imageRowCount++;
                         imageCount++;
     
                         dims = image.scale(0.6);
@@ -539,8 +573,26 @@ export class PrintOrderComponent implements OnInit {
                         });
     
                         imagesDistance += 200;
+
+                        if (imageCount >= 12) {
+                            page = pdfDoc.addPage();
+                            page.setRotation(degrees(90));
+                
+                            imageHeight = 150;
+                            imageLabelHeight = 165;
+                            heightOfDocument = 35;
+                            imageCount = 0;
+                            imageRowCount = 0;
+                            imagesDistance = 0;
+                        }
                     } catch (err) {
                         console.log('--DEBUG--  img err: ', err);
+                        this.dialog.open(ErrorDialogWindow, {
+                            data: {
+                                errorMessage: err
+                            }
+                        });
+                        
                         continue;
                     }
                 }
@@ -709,8 +761,39 @@ export class PrintOrderComponent implements OnInit {
                 rotate: degrees(90)
             });
     
+            let slabsNeeded: any = {};
+
             strs.forEach((stair: any) => {
-                page.drawText(`${stair.numWholeSlabsNeeded}`, {
+                let numWholeSlabsNeeded = stair.numWholeSlabsNeeded;
+                let width = this.decimalToMixedFraction(stair.TreadWidth);
+                let extraTreadsNeeded = stair.extraTreadsNeeded;
+
+                let key = width.toString();
+
+                if (stair.RiserType !== 2) {
+                    console.log('--DEBUG-- treads data: ', {
+                        key,
+                        stairType: stair.StairType,
+                        extraTreadsNeeded: extraTreadsNeeded,
+                        numWholeSlabsNeeded: numWholeSlabsNeeded
+                    });
+    
+                    if (!slabsNeeded[key]) slabsNeeded[key] = {
+                        numWholeSlabsNeeded: 0,
+                        width,
+                        extraTreadsNeeded: 0
+                    };
+                    
+                    let numWholeSlabsNeededNmbr = slabsNeeded[key].numWholeSlabsNeeded + numWholeSlabsNeeded;
+                    let extraTreadsNeededNmbr = slabsNeeded[key].extraTreadsNeeded + extraTreadsNeeded;
+
+                    slabsNeeded[key].numWholeSlabsNeeded = numWholeSlabsNeededNmbr;
+                    slabsNeeded[key].extraTreadsNeeded = extraTreadsNeededNmbr;
+                }
+            });
+
+            Object.keys(slabsNeeded).forEach((slabsNeededKey: any) => {
+                page.drawText(`${slabsNeeded[slabsNeededKey].numWholeSlabsNeeded}`, {
                     x: hghtOfDcmnt,
                     y: height - 620,
                     size: fontSize,
@@ -728,9 +811,9 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
     
-                treadWidth = this.decimalToMixedFraction(stair.TreadWidth);
+                treadWidth = this.decimalToMixedFraction(slabsNeeded[slabsNeededKey].TreadWidth);
     
-                page.drawText(treadWidth, {
+                page.drawText(slabsNeeded[slabsNeededKey].width, {
                     x: hghtOfDcmnt,
                     y: height - 470,
                     size: fontSize,
@@ -748,7 +831,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
     
-                page.drawText(`${stair.extraTreadsNeeded}`, {
+                page.drawText(`${slabsNeeded[slabsNeededKey].extraTreadsNeeded}`, {
                     x: hghtOfDcmnt,
                     y: height - 160,
                     size: fontSize,
@@ -769,8 +852,42 @@ export class PrintOrderComponent implements OnInit {
                 rotate: degrees(90)
             });
     
+            let halfInchSlabsNeeded: any = {};
+
             strs.forEach((stair: any) => {
-                page.drawText(`${stair.numWholeSlabsNeededTotal}`, {
+                let numWholeSlabsNeededTotal = stair.numWholeSlabsNeededTotal;
+                let width = this.decimalToMixedFraction(stair.RiserWidth);
+                let numExtraRisersNeeded = stair.numExtraRisersNeeded;
+
+                let key = width.toString();
+
+                if (stair.RiserType !== 2) {
+                    console.log('--DEBUG-- treads data: ', {
+                        key,
+                        stairType: stair.StairType,
+                        numExtraRisersNeeded: numExtraRisersNeeded,
+                        numWholeSlabsNeededTotal: numWholeSlabsNeededTotal
+                    });
+    
+                    if (!halfInchSlabsNeeded[key]) halfInchSlabsNeeded[key] = {
+                        numWholeSlabsNeededTotal: 0,
+                        width,
+                        numExtraRisersNeeded: 0
+                    };
+                    
+                    let numWholeSlabsNeededTotalNmbr = halfInchSlabsNeeded[key].numWholeSlabsNeededTotal + numWholeSlabsNeededTotal;
+                    let numExtraRisersNeededNmbr = halfInchSlabsNeeded[key].numExtraRisersNeeded + numExtraRisersNeeded;
+
+                    halfInchSlabsNeeded[key].numWholeSlabsNeededTotal = numWholeSlabsNeededTotalNmbr;
+                    halfInchSlabsNeeded[key].numExtraRisersNeeded = numExtraRisersNeededNmbr;
+                }
+            });
+
+            Object.keys(halfInchSlabsNeeded).forEach((halfInchSlabsNeededKey: any) => {
+                let numWholeSlabsNeededTotal = halfInchSlabsNeeded[halfInchSlabsNeededKey].numWholeSlabsNeededTotal;
+                let riserWidth = halfInchSlabsNeeded[halfInchSlabsNeededKey].width;
+
+                page.drawText(`${numWholeSlabsNeededTotal}`, {
                     x: hghtOfDcmnt,
                     y: height - 620,
                     size: fontSize,
@@ -788,7 +905,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
     
-                treadWidth = this.decimalToMixedFraction(stair.RiserWidth);
+                treadWidth = riserWidth;
     
                 page.drawText(treadWidth, {
                     x: hghtOfDcmnt,
@@ -808,7 +925,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
     
-                page.drawText(`${stair.numExtraRisersNeeded}`, {
+                page.drawText(`${halfInchSlabsNeeded[halfInchSlabsNeededKey].numExtraRisersNeeded}`, {
                     x: hghtOfDcmnt,
                     y: height - 160,
                     size: fontSize,
@@ -870,8 +987,45 @@ export class PrintOrderComponent implements OnInit {
                 rotate: degrees(90)
             });
     
+            let treads: any = {};
+
             strs.forEach((stair: any) => {
-                page.drawText(`${stair.numRisersNeededTopRiser} ${this.pieceMaker(stair.numRisersNeededTopRiser)}`, {
+                if (stair.numRisersNeeded < 0) stair.numRisersNeeded = 0; 
+
+                let tW = stair.TreadWidth;
+                let run = this.decimalToMixedFraction(stair.TreadRun);
+
+
+                if (stair.StairType === 2) {
+                    run = '(2x10)';
+                }
+
+                if (stair.StairType === 3) {
+                    run = '(2x6)';
+                }
+
+                let key = tW.toString() + run.toString();
+
+                console.log('--DEBUG-- treads data: ', {
+                    key,
+                    stairType: stair.StairType,
+                    numRisersNeeded: stair.numRisersNeeded,
+                    run: run
+                });
+
+                if (!treads[key]) treads[key] = {
+                    pieces: 0,
+                    width: tW,
+                    run: run
+                };
+                
+                let pieces = treads[key].pieces + stair.numRisersNeeded;
+
+                treads[key].pieces = pieces;
+            });
+
+            Object.keys(treads).forEach((tread: any) => {
+                page.drawText(`${treads[tread].pieces} ${this.pieceMaker(treads[tread].pieces)}`, {
                     x: hghtOfDcmnt,
                     y: height - 550,
                     size: fontSize,
@@ -880,7 +1034,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
         
-                page.drawText(`Run:   ${this.decimalToMixedFraction(stair.TreadRun)}`, {
+                page.drawText(`Run:   ${treads[tread].run}`, {
                     x: hghtOfDcmnt,
                     y: height - 450,
                     size: fontSize,
@@ -889,7 +1043,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
         
-                page.drawText(`width:   ${this.decimalToMixedFraction(stair.TreadWidth)}`, {
+                page.drawText(`width:   ${this.decimalToMixedFraction(treads[tread].width)}`, {
                     x: hghtOfDcmnt,
                     y: height - 250,
                     size: fontSize,
@@ -900,6 +1054,7 @@ export class PrintOrderComponent implements OnInit {
         
                 hghtOfDcmnt += 15;
             });
+
     
             if (hghtOfDcmnt > 500 && cutThePage) {
                 page = pdfDoc.addPage();
@@ -916,9 +1071,39 @@ export class PrintOrderComponent implements OnInit {
                 color: rgb(0, 0, 0),
                 rotate: degrees(90)
             });
+
+            let risers: any = {};
     
             strs.forEach((stair: any) => {
-                page.drawText(`${stair.NumStdRisers} ${this.pieceMaker(stair.NumStdRisers)}`, {
+                let numStdRisers = stair.NumStdRisers;
+                let cutRise = this.decimalToMixedFraction(stair.CutRise);
+                let rW = this.decimalToMixedFraction(stair.RiserWidth);
+
+                let key = rW.toString() + cutRise.toString();
+
+                console.log('--DEBUG-- risers data: ', {
+                    key,
+                    stairType: stair.StairType,
+                    numStdRisers,
+                    cutRise,
+                    rW
+                });
+
+                if (stair.StairType !== 2 && stair.StairType !== 3) {
+                    if (!risers[key]) risers[key] = {
+                        pieces: 0,
+                        width: rW,
+                        rise: cutRise
+                    };
+                    
+                    let pieces = risers[key].pieces + numStdRisers;
+
+                    risers[key].pieces = pieces;   
+                }
+            });
+
+            Object.keys(risers).forEach((riser: any) => {
+                page.drawText(`${risers[riser].pieces} ${this.pieceMaker(risers[riser].pieces)}`, {
                     x: hghtOfDcmnt,
                     y: height - 550,
                     size: fontSize,
@@ -927,7 +1112,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
         
-                page.drawText(`Rise:   ${this.decimalToMixedFraction(stair.CutRise)}`, {
+                page.drawText(`Rise:   ${risers[riser].rise}`, {
                     x: hghtOfDcmnt,
                     y: height - 450,
                     size: fontSize,
@@ -936,7 +1121,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
         
-                page.drawText(`width:   ${this.decimalToMixedFraction(stair.RiserWidth)}`, {
+                page.drawText(`width:   ${risers[riser].width}`, {
                     x: hghtOfDcmnt,
                     y: height - 250,
                     size: fontSize,
@@ -955,17 +1140,38 @@ export class PrintOrderComponent implements OnInit {
                 hghtOfDcmnt = 35;
             }
     
-            page.drawText(`Bottom:`, {
+            page.drawText(`Bottom RISERS:`, {
                 x: hghtOfDcmnt,
-                y: height - 650,
+                y: height - 690,
                 size: fontSize,
                 font: courierFont,
                 color: rgb(0, 0, 0),
                 rotate: degrees(90)
             });
     
+            let bottomRisers: any = {};
+
             strs.forEach((stair: any) => {
-                page.drawText(`${1} ${this.pieceMaker(1)}`, {
+                let rW = this.decimalToMixedFraction(stair.RiserWidth);
+                let rise = this.decimalToMixedFraction(stair.CutBottomRise);
+
+                let key = rW.toString() + rise.toString();
+
+                if (stair.StairType !== 2 && stair.StairType !== 3) {
+                    if (!bottomRisers[key]) bottomRisers[key] = {
+                        pieces: 0,
+                        width: rW,
+                        rise
+                    };
+                    
+                    let pieces = bottomRisers[key].pieces + 1;
+
+                    bottomRisers[key].pieces = pieces;   
+                }
+            });
+
+            Object.keys(bottomRisers).forEach((bottomRiser: any) => {
+                page.drawText(`${bottomRisers[bottomRiser].pieces} ${this.pieceMaker(bottomRisers[bottomRiser].pieces)}`, {
                     x: hghtOfDcmnt,
                     y: height - 550,
                     size: fontSize,
@@ -974,7 +1180,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
         
-                page.drawText(`Rise:   ${this.decimalToMixedFraction(stair.CutBottomRise)}`, {
+                page.drawText(`Rise:   ${bottomRisers[bottomRiser].rise}`, {
                     x: hghtOfDcmnt,
                     y: height - 450,
                     size: fontSize,
@@ -983,7 +1189,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
         
-                page.drawText(`width:   ${this.decimalToMixedFraction(stair.RiserWidth)}`, {
+                page.drawText(`width:   ${bottomRisers[bottomRiser].width}`, {
                     x: hghtOfDcmnt,
                     y: height - 250,
                     size: fontSize,
@@ -1011,8 +1217,28 @@ export class PrintOrderComponent implements OnInit {
                 rotate: degrees(90)
             });
     
+            let topRisers: any = {};
+
             strs.forEach((stair: any) => {
-                page.drawText(`${1} ${this.pieceMaker(1)}`, {
+                let topW = this.decimalToMixedFraction(stair.CalcWidth);
+                let rise = this.decimalToMixedFraction(stair.CutTopRise);
+
+                let key = topW.toString() + rise.toString();
+
+                if (!topRisers[key]) topRisers[key] = {
+                    pieces: 0,
+                    width: topW,
+                    rise,
+                    orderType: stair.OrderType.replace('*', '')
+                };
+                
+                let pieces = topRisers[key].pieces + 1;
+
+                topRisers[key].pieces = pieces;
+            });
+
+            Object.keys(topRisers).forEach((topRiser: any) => {
+                page.drawText(`${topRisers[topRiser].pieces} ${this.pieceMaker(topRisers[topRiser].pieces)}`, {
                     x: hghtOfDcmnt,
                     y: height - 550,
                     size: fontSize,
@@ -1021,7 +1247,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
         
-                page.drawText(`Rise:   ${this.decimalToMixedFraction(stair.CutTopRise)}`, {
+                page.drawText(`Rise:   ${topRisers[topRiser].rise}`, {
                     x: hghtOfDcmnt,
                     y: height - 450,
                     size: fontSize,
@@ -1030,7 +1256,7 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
         
-                page.drawText(`width:   ${this.decimalToMixedFraction(stair.CalcWidth)}`, {
+                page.drawText(`width:   ${topRisers[topRiser].width}`, {
                     x: hghtOfDcmnt,
                     y: height - 250,
                     size: fontSize,
@@ -1038,10 +1264,10 @@ export class PrintOrderComponent implements OnInit {
                     color: rgb(0, 0, 0),
                     rotate: degrees(90)
                 });
-    
-                page.drawText(`${stair.OrderType && stair.OrderType.slice(1) || ''}`, {
+
+                page.drawText(`${topRisers[topRiser].orderType}`, {
                     x: hghtOfDcmnt,
-                    y: height - 100,
+                    y: height - 120,
                     size: fontSize,
                     font: courierFont,
                     color: rgb(0, 0, 0),
@@ -1087,8 +1313,6 @@ export class PrintOrderComponent implements OnInit {
 
         heightOfDocument += 15;
 
-        console.log('--DEBUG-- height of document 1: ', heightOfDocument);
-
         if (heightOfDocument > 500) {
             page = pdfDoc.addPage();
             page.setRotation(degrees(90));
@@ -1123,17 +1347,6 @@ export class PrintOrderComponent implements OnInit {
                 color: rgb(0, 0, 0),
                 rotate: degrees(90)
             });
-
-            /* if (order.blurb_winder) {
-                page.drawText(`${order.blurb_winder}`, {
-                    x: heightOfDocument,
-                    y: height - 450,
-                    size: tableFontSize,
-                    font: courierFont,
-                    color: rgb(0, 0, 0),
-                    rotate: degrees(90)
-                });
-            } */
 
             heightOfDocument += 25;
 
@@ -1304,6 +1517,15 @@ export class PrintOrderComponent implements OnInit {
                     rotate: degrees(90)
                 });
 
+                page.drawText(`${order.OrderType.replace('*', '')}`, {
+                    x: heightOfDocument,
+                    y: height - 200,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+
                 heightOfDocument += 25;
             }
 
@@ -1317,8 +1539,6 @@ export class PrintOrderComponent implements OnInit {
                 thickness: 1,
                 color: rgb(0, 0, 0),
             });
-
-            console.log('--DEBUG-- height of document 2: ', heightOfDocument);
 
             if (heightOfDocument > 500) {
                 page = pdfDoc.addPage();
@@ -1914,6 +2134,13 @@ export class PrintOrderComponent implements OnInit {
 
         heightOfDocument += 20;
 
+        if (heightOfDocument > 500 && heightOfDocument) {
+            page = pdfDoc.addPage();
+            page.setRotation(degrees(90));
+
+            heightOfDocument = 35;
+        }
+
         let stairs = this.data.orders.reduce((t: string, o: any) => {
             return t + ` ${o.StairNum},`
         }, 'Stairs');
@@ -2041,9 +2268,10 @@ export class PrintOrderComponent implements OnInit {
         let imagesDistance = 0;
         let imageHeight = 570;
         let imageLabelHeight = 585;
+        let imageRowCount = 0;
         let imageCount = 0;
 
-        console.log('--DEBUG-- heightOfDocument: ', heightOfDocument);
+        console.log('--DEBUG-- heightOfDocument, shipping manifest: ', heightOfDocument);
         if (heightOfDocument >= 435) {
             page = pdfDoc.addPage();
             page.setRotation(degrees(90));
@@ -2051,26 +2279,30 @@ export class PrintOrderComponent implements OnInit {
             imageHeight = 150;
             imageLabelHeight = 165;
             heightOfDocument = 35;
+        } else {
+            imageCount = 8;
         }
 
         for (let order of this.data.orders) {
             if (order.Images?.length) {
                 for (let img of order.Images) {
                     try {
-                        if (img.indexOf('image/png') !== -1) {
-                            console.log('--DEBUG-- png');
+                        console.log('--DEBUG-- img: ', img);
+                        if (img.img && img.img.indexOf('image/png') !== -1) {
+                            console.log('--DEBUG-- 2 png');
                             image = await pdfDoc.embedPng(this.base64ToArrayBuffer(img.img.split(',')[1]));
                         } else {
-                            console.log('--DEBUG-- jpg');
+                            console.log('--DEBUG-- 2 jpg');
                             image = await pdfDoc.embedJpg(this.base64ToArrayBuffer(img.img.split(',')[1]));
                         }
-                        console.log('--DEBUG-- image count: ', imageCount)
-                        if (imageCount >= 4) {
-                            imageCount = 0;
+
+                        if (imageRowCount >= 4) {
+                            imageRowCount = 0;
                             imageHeight += 175;
                             imageLabelHeight += 175;
                             imagesDistance = 0;
                         }
+                        imageRowCount++;
                         imageCount++;
     
                         dims = image.scale(0.6);
@@ -2098,8 +2330,27 @@ export class PrintOrderComponent implements OnInit {
                         });
     
                         imagesDistance += 200;
+
+                        console.log('--DEBUG-- image count: ', imageCount);
+                        if (imageCount >= 12) {
+                            page = pdfDoc.addPage();
+                            page.setRotation(degrees(90));
+                
+                            imageHeight = 150;
+                            imageLabelHeight = 165;
+                            heightOfDocument = 35;
+                            imageCount = 0;
+                            imageRowCount = 0;
+                            imagesDistance = 0;
+                        }
                     } catch (err) {
                         console.log('--DEBUG--  img err: ', err);
+                        this.dialog.open(ErrorDialogWindow, {
+                            data: {
+                                errorMessage: err
+                            }
+                        });
+                        
                         continue;
                     }
                 }

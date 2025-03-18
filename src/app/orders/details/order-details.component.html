@@ -10,11 +10,11 @@
         <section class="staircases">
             <form class="form-order-details" [formGroup]="orderDetailsForm">
                 <div class="slider-container" *ngIf="((imgs$ | async) || []).length">
-                    <button *ngIf="((imgs$ | async) || []).length > 1" class="button-sldr button-sldr-prev" (click)="prevImageStrcssWndw()">&#10094;</button>
+                    <button matTooltip="Prev Image" *ngIf="((imgs$ | async) || []).length > 1" class="button-sldr button-sldr-prev" (click)="prevImageStrcssWndw()">&#10094;</button>
                     
                     <img [src]="((imgs$ | async) || [])[imageIndexStrcss].img" class="slider-image" alt="Slider Image">
                     
-                    <button *ngIf="((imgs$ | async) || []).length > 1" class="button-sldr button-sldr-next" (click)="nextImageStrcssWndw()">&#10095;</button>
+                    <button matTooltip="Next Image" *ngIf="((imgs$ | async) || []).length > 1" class="button-sldr button-sldr-next" (click)="nextImageStrcssWndw()">&#10095;</button>
                 </div>
                 <mat-form-field class="order-details-section-type details-width">
                     <mat-label>Section Type</mat-label>
@@ -406,11 +406,11 @@
                                 class="image-preview"
                             /> -->
                             <div class="slider-container image-preview" *ngIf="data.Images.length || uploadSuccess">
-                                <button *ngIf="data.Images.length > 1" class="button-sldr button-sldr-prev" (click)="prevImageImgsWndw()">&#10094;</button>
+                                <button matTooltip="Prev Image" *ngIf="data.Images.length > 1" class="button-sldr button-sldr-prev" (click)="prevImageImgsWndw()">&#10094;</button>
                                 
                                 <img [src]="imagePreview()" class="slider-image" alt="Slider Image">
                                 
-                                <button *ngIf="data.Images.length > 1" class="button-sldr button-sldr-next" (click)="nextImageImgsWndw()">&#10095;</button>
+                                <button matTooltip="Next Image" *ngIf="data.Images.length > 1" class="button-sldr button-sldr-next" (click)="nextImageImgsWndw()">&#10095;</button>
                             </div>
                             <p *ngIf="fileSize()">
                                 <span class="image-name">{{ imageName() }}</span> ({{
@@ -427,7 +427,7 @@
     </mat-tab>
 </mat-tab-group>
 
-<button class="edit-stair-delete-btn" (click)="openDeleteDialog()" mat-mini-fab>
+<button matTooltip="Delete Stair" class="edit-stair-delete-btn" (click)="openDeleteDialog()" mat-mini-fab>
     <mat-icon>delete</mat-icon>
 </button>
 

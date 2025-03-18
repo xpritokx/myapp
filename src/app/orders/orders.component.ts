@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Sort, MatSort, MatSortModule } from '@angular/material/sort';
 import { PageEvent, MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -20,7 +21,7 @@ import { EditOrderDialogComponent } from './edit/edit-order.component';
 import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
 
 @Component({
-  selector: 'app-auth',
+  selector: 'orders-list',
   imports: [
     CommonModule,
     MatTableModule,
@@ -29,6 +30,7 @@ import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
     MatButtonModule,
     MatPaginatorModule,
     MatSortModule,
+    MatTooltipModule,
     MatProgressSpinnerModule
   ],
   template: `
@@ -132,25 +134,25 @@ import { FilterOrdersDialogComponent } from './filter/filter-orders.component';
     </section>
 
     <!-- buttons fot mobile version -->
-    <button class="add-new-btn-mobile" *ngIf="deviceDetectorService.isMobile()" (click)="add()" mat-mini-fab>
+    <button matTooltip="Add new order" class="add-new-btn-mobile" *ngIf="deviceDetectorService.isMobile()" (click)="add()" mat-mini-fab>
         <mat-icon>add</mat-icon>
     </button>
-    <button class="filter-btn-mobile" *ngIf="deviceDetectorService.isMobile()" ngClass="{{ searchParamsEnabled ? 'search-params-enabled' : '' }}" (click)="filter()" mat-mini-fab>
+    <button matTooltip="Filter orders"  class="filter-btn-mobile" *ngIf="deviceDetectorService.isMobile()" ngClass="{{ searchParamsEnabled ? 'search-params-enabled' : '' }}" (click)="filter()" mat-mini-fab>
         <mat-icon>filter_alt</mat-icon>
     </button>
-    <button class="filter-btn-off-mobile" *ngIf="searchParamsEnabled && deviceDetectorService.isMobile()" (click)="filterOff()" mat-mini-fab>
+    <button matTooltip="Decline filters"  class="filter-btn-off-mobile" *ngIf="searchParamsEnabled && deviceDetectorService.isMobile()" (click)="filterOff()" mat-mini-fab>
         <mat-icon>filter_alt_off</mat-icon>
     </button>
     <!-- buttons fot mobile version -->
 
     <!-- buttons fot desktop version -->
-    <button class="add-new-btn" *ngIf="!deviceDetectorService.isMobile()" (click)="add()" mat-mini-fab>
+    <button matTooltip="Add new order" class="add-new-btn" *ngIf="!deviceDetectorService.isMobile()" (click)="add()" mat-mini-fab>
         <mat-icon>add</mat-icon>
     </button>
-    <button class="filter-btn" *ngIf="!deviceDetectorService.isMobile()" ngClass="{{ searchParamsEnabled ? 'search-params-enabled' : '' }}" (click)="filter()" mat-mini-fab>
+    <button matTooltip="Filter orders" class="filter-btn" *ngIf="!deviceDetectorService.isMobile()" ngClass="{{ searchParamsEnabled ? 'search-params-enabled' : '' }}" (click)="filter()" mat-mini-fab>
         <mat-icon>filter_alt</mat-icon>
     </button>
-    <button class="filter-btn-off" *ngIf="searchParamsEnabled && !deviceDetectorService.isMobile()" (click)="filterOff()" mat-mini-fab>
+    <button matTooltip="Decline filters" class="filter-btn-off" *ngIf="searchParamsEnabled && !deviceDetectorService.isMobile()" (click)="filterOff()" mat-mini-fab>
         <mat-icon>filter_alt_off</mat-icon>
     </button>
     <div *ngIf="searchParamsEnabled && !deviceDetectorService.isMobile()" class="filter-container">
@@ -263,7 +265,7 @@ export class OrdersComponent {
             });
         }
     }
-
+    
     openEditDialog(order: IOrder) {
         console.log('--DEBUG-- edit dialog opened: ', order);
         const dialogRef = this.dialog.open(EditOrderDialogComponent, {
@@ -273,7 +275,7 @@ export class OrdersComponent {
         dialogRef.afterClosed().subscribe(result => {
             console.log(`--DEBUG-- edit dialog result: ${result}`);
         
-            if (result === 'deleted') {
+            if (['deleted', 'updated'].includes(result)) {
                 this.getOrders();
             }
         });

@@ -5,6 +5,7 @@ import { OrdersComponent } from './orders/orders.component';
 import { QuotesComponent } from './quotes/quotes.component';
 import { CustomerComponent } from './customers/customer.component';
 import { ModelsComponent } from './models/models.component';
+import { PricesComponent } from './prices/prices.component';
 
 const routeConfig: Routes = [
     {
@@ -36,6 +37,11 @@ const routeConfig: Routes = [
         path: 'models',
         component: ModelsComponent,
         title: 'Models page',
+    },
+    {
+        path: 'prices',
+        component: PricesComponent,
+        title: 'Prices page',
     },
     {
         path: 'home',

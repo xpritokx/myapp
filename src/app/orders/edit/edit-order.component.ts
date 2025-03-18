@@ -8,10 +8,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable, BehaviorSubject } from 'rxjs';
 
 import { IOrder } from '../../../interfaces/order.interface';
 
+import { OrderStatus } from '../order-status/order-status.component';
+import { OrderPricesComponent } from '../order-prices/order-prices.component';
 import { PrintOrderComponent } from '../print/print-order.component';
 import { OrderDetailsComponent } from '../details/order-details.component';
 import { DeleteOrderDialogComponent } from '../delete-order/delete-order.component';
@@ -100,10 +103,16 @@ import { OrdersService } from '../../../services/orders.service';
                 </div>
             </section>
             
-            <button class="edit-order-print-btn" (click)="openPrintDialog()" mat-mini-fab>
+            <button matTooltip="Change Status" class="edit-order-status-btn" (click)="openStatusDialog()" mat-mini-fab>
+                <mat-icon>swap_vert</mat-icon>
+            </button>
+            <button matTooltip="Prices" class="edit-order-prices-btn" (click)="openPricesDialog()" mat-mini-fab>
+                <mat-icon>attach_money</mat-icon>
+            </button>
+            <button matTooltip="Print" class="edit-order-print-btn" (click)="openPrintDialog()" mat-mini-fab>
                 <mat-icon>print</mat-icon>
             </button>
-            <button class="edit-order-delete-btn" (click)="openDeleteDialog()" mat-mini-fab>
+            <button matTooltip="Delete Order" class="edit-order-delete-btn" (click)="openDeleteDialog()" mat-mini-fab>
                 <mat-icon>delete</mat-icon>
             </button>
         </mat-dialog-content>
@@ -111,7 +120,7 @@ import { OrdersService } from '../../../services/orders.service';
             <button class="edit-order-add-stair-btn" (click)="addStair()" mat-mini-fab>
                 <mat-icon>add_2</mat-icon>
             </button>
-            <button mat-button mat-dialog-close>Cancel</button>
+            <button mat-button (click)="close()">Cancel</button>
             <button mat-button (click)="edit()">Edit</button>
         </mat-dialog-actions>
     `,
@@ -123,6 +132,7 @@ import { OrdersService } from '../../../services/orders.service';
         MatFormFieldModule, 
         MatInputModule,
         MatIconModule,
+        MatTooltipModule,
         MatProgressSpinnerModule,
         ReactiveFormsModule,   
     ],
@@ -136,6 +146,7 @@ export class EditOrderDialogComponent implements OnInit {
     ordersService = inject(OrdersService);
     salesOrders: any[] = [];
     orders: any[] = [];
+    updatedStatus: string = '';
     stairsCount = 0;
 
     getLoading(): Observable<boolean> {
@@ -196,10 +207,15 @@ export class EditOrderDialogComponent implements OnInit {
         this.getOrders();
     }
 
-    async edit() {
+    edit() {
+        this.updatedStatus = 'deleted';
         console.log('--DEBUG-- dialog edit order');
 
-        this.dialogRef.close('deleted');
+        this.dialogRef.close(this.updatedStatus);
+    }
+
+    close() {
+        this.dialogRef.close(this.updatedStatus);
     }
 
     async getOrders() {
@@ -274,6 +290,48 @@ export class EditOrderDialogComponent implements OnInit {
 
                 this.open(updatedOrder);
             }
+        });
+    }
+
+    openStatusDialog() {
+        console.log('--DEBUG-- status dialog opened: ', this.data);
+        
+        const dialogRef = this.dialog.open(OrderStatus, {
+            data: {
+                orderNum: this.data.OrderNum,
+                status: this.data.ShipStatus
+            }
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            console.log(`--DEBUG-- status dialog result: ${result}`);
+
+            if (result) {
+                this.data.ShipStatus = result;
+
+                await this.ordersService.updateShipStatus(
+                    this.data.OrderNum,
+                    result
+                );
+
+                this.updatedStatus = 'updated';
+
+                this.getOrders();
+            }
+        });
+    }
+
+    openPricesDialog() {
+        console.log('--DEBUG-- prices dialog opened: ', this.data);
+        
+        const dialogRef = this.dialog.open(OrderPricesComponent, {
+            data: {
+                orderNum: this.data.OrderNum
+            }
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            console.log(`--DEBUG-- prices dialog result: ${result}`);
         });
     }
 

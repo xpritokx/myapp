@@ -12,6 +12,7 @@ export interface IOrder {
     Width: number;
     HeadroomMatters: number;
     quote?: boolean;
+    ShipStatus?: string;
 }
 
 export interface IOrderSearchParams {

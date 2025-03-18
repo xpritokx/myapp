@@ -148,6 +148,26 @@ export class OrdersService {
         });
     };
 
+    updateShipStatus(orderNum: number, status: string): Promise<{
+        status: string
+    }> {
+        const url = `orders/status/${orderNum}`;
+
+        console.log('--DEBUG-- url: ', url);
+
+        return new Promise((resolve, reject) => {
+            this.httpService.put(url, {
+                status,
+            }, (result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+
+                resolve(result);
+            })
+        });
+    }
+
     updateStair(id: string, data: any): Promise<{
         status: string
     }> {

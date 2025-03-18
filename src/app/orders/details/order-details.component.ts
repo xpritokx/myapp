@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
@@ -18,8 +19,9 @@ import { map, startWith } from 'rxjs/operators';
 
 import { SelectImageDetail } from '../select-image-detail/select-image-detail.component';
 import { DeleteStairDialogComponent } from '../delete-stair/delete-stair.component';
-import { ErrorDialogWindow } from '../../error/error-dialog.component';
 import { ShowMethodsInfoDialog } from '../../info/showMethodsInfo/show-methods-info.component';
+import { SuccessDialogWindow } from '../../success/success-dialog.component';
+import { ErrorDialogWindow } from '../../error/error-dialog.component';
 
 import { OrdersService } from '../../../services/orders.service';
 import { MaterialsService } from '../../../services/materials.service';
@@ -42,6 +44,7 @@ import { ImagesService } from '../../../services/images.service';
         MatInputModule,
         MatIconModule,
         MatTabsModule,
+        MatTooltipModule,
         MatCheckboxModule,
         MatAutocompleteModule,
         MatProgressSpinnerModule,
@@ -767,6 +770,12 @@ export class OrderDetailsComponent implements OnInit {
         try {
             await this.ordersService.updateStair(this.data.ID, updateObj);
             
+            this.dialog.open(SuccessDialogWindow, {
+                data: {
+                    message: 'Stair was successfully updated!'
+                }
+            });
+
             this.updatedLabel$.next(true);
         } catch (err: any) {
             this.loading$.next(false);
@@ -1530,6 +1539,12 @@ export class OrderDetailsComponent implements OnInit {
                         this.data.stairsCount
                     );
     
+                    this.dialog.open(SuccessDialogWindow, {
+                        data: {
+                            message: 'Stair was successfully deleted!'
+                        }
+                    });
+
                     this.dialogRef.close('deleted');
                 } catch (err: any) {
                     this.loading$.next(false);
@@ -1720,6 +1735,11 @@ export class OrderDetailsComponent implements OnInit {
     
             console.log('--DEBUG-- upload: ', res);
             if (res.status === 'ok') {
+                this.dialog.open(SuccessDialogWindow, {
+                    data: {
+                        message: 'Image was successfully uploaded!'
+                    }
+                });
                 this.dialogRef.close('reopen');
             } else {
                 this.imageUploadingFailedLabel$.next(true);
@@ -1797,6 +1817,12 @@ export class OrderDetailsComponent implements OnInit {
 
         try {
             await this.ordersService.removeImage(this.data.ID, this.data.Images[this.imageIndexImgsWndw].id);
+
+            this.dialog.open(SuccessDialogWindow, {
+                data: {
+                    message: 'Image was successfully removed!'
+                }
+            });
 
             this.dialogRef.close('reopen');
         } catch (err: any) {

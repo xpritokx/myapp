@@ -39,6 +39,7 @@ import { selectLogoutButton } from './selectors/buttons.selectors';
           <div *ngIf="(menuSection$ | async) === 'Quotes'" class="brand-logo-title"><h2>Quotes</h2></div>
           <div *ngIf="(menuSection$ | async) === 'Customers'" class="brand-logo-title"><h2>{{ deviceDetectorService.isMobile() ? 'Cstmrs' : 'Customers' }}</h2></div>
           <div *ngIf="(menuSection$ | async) === 'Models'" class="brand-logo-title"><h2>Models</h2></div>
+          <div *ngIf="(menuSection$ | async) === 'Prices'" class="brand-logo-title"><h2>Prices</h2></div>
         </a>
         <button *ngIf="(logoutButton$ | async) && !deviceDetectorService.isMobile()"  mat-icon-button class="menu-button" [matMenuTriggerFor]="menu">
             <mat-icon>more_vert</mat-icon>
@@ -58,6 +59,9 @@ import { selectLogoutButton } from './selectors/buttons.selectors';
           </button>
           <button mat-menu-item (click)="goToModels()">
             <span>Models</span>
+          </button>
+          <button mat-menu-item (click)="goToPrices()">
+            <span>Prices</span>
           </button>
         </mat-menu>
           
@@ -119,6 +123,10 @@ export class AppComponent {
         this.menuSection$.next('Models');
         break;
       };
+      case 'prices': {
+        this.menuSection$.next('Prices');
+        break;
+      };
       default: {
         this.menuSection$.next('Home');
       }
@@ -129,7 +137,13 @@ export class AppComponent {
   }
 
   async getConfig() {
-    const config = await this.configService.getConfig();
+    let config;
+
+    try {
+      config = await this.configService.getConfig();
+    } catch (err) {
+      config = null;
+    }
 
     console.log('--DEBUG-- config', config);
 
@@ -202,6 +216,14 @@ export class AppComponent {
     if (this.tokenService.getToken()) {
       this.menuSection$.next('Models');
       this.router.navigate(['/models']);
+      this.store.dispatch(logoutButtonEnable());
+    }
+  }
+
+  goToPrices() {
+    if (this.tokenService.getToken()) {
+      this.menuSection$.next('Prices');
+      this.router.navigate(['/prices']);
       this.store.dispatch(logoutButtonEnable());
     }
   }

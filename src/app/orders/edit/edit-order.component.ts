@@ -9,15 +9,20 @@ import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+
+import { DeviceDetectorService } from 'ngx-device-detector';
 import { Observable, BehaviorSubject } from 'rxjs';
 
 import { IOrder } from '../../../interfaces/order.interface';
 
 import { OrderStatus } from '../order-status/order-status.component';
+
 import { OrderPricesComponent } from '../order-prices/order-prices.component';
 import { PrintOrderComponent } from '../print/print-order.component';
 import { OrderDetailsComponent } from '../details/order-details.component';
 import { DeleteOrderDialogComponent } from '../delete-order/delete-order.component';
+import { DialogAdvanced } from '../advanced/advanced.component';
+
 
 import { OrdersService } from '../../../services/orders.service';
 @Component({
@@ -103,7 +108,10 @@ import { OrdersService } from '../../../services/orders.service';
                 </div>
             </section>
             
-            <button matTooltip="Change Status" class="edit-order-status-btn" (click)="openStatusDialog()" mat-mini-fab>
+            <button matTooltip="Advanced" ngClass="{{ !deviceDetectorService.isMobile() ? 'edit-order-advanced-btn' : 'edit-order-advanced-btn-mobile' }}" (click)="openAdvancedDialog()" mat-mini-fab>
+                <mat-icon>settings</mat-icon>
+            </button>
+            <button matTooltip="Change Status" ngClass="{{ !deviceDetectorService.isMobile() ? 'edit-order-status-btn' : 'edit-order-status-btn-mobile' }}" (click)="openStatusDialog()" mat-mini-fab>
                 <mat-icon>swap_vert</mat-icon>
             </button>
             <button matTooltip="Prices" class="edit-order-prices-btn" (click)="openPricesDialog()" mat-mini-fab>
@@ -142,6 +150,8 @@ import { OrdersService } from '../../../services/orders.service';
 export class EditOrderDialogComponent implements OnInit {
     readonly dialog = inject(MatDialog);
     public loading$ = new BehaviorSubject<boolean>(false);
+    public readonly deviceDetectorService = inject(DeviceDetectorService);
+
     dataSource: MatTableDataSource<any> = new MatTableDataSource();
     ordersService = inject(OrdersService);
     salesOrders: any[] = [];
@@ -242,6 +252,12 @@ export class EditOrderDialogComponent implements OnInit {
                 orders.data[i]['Location'] = orders.data[i]['WinderLocation'];
             }
 
+            if (orders.data[i]['StringerStyle1'] === 1212 && 
+                orders.data[i]['SectionType'] === 'Landing'
+            ) {
+                orders.data[i].SectionDesc = 'Landing(Straight)'
+            }
+
             orders.data[i].Stair = i + 1;
         }
         console.log('--DEBUG-- dialog get orders!', orders.data);
@@ -275,6 +291,7 @@ export class EditOrderDialogComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(async result => {
             if (['deleted','updated'].includes(result)) {
+                this.updatedStatus = 'updated';
                 this.getOrders();
             }
 
@@ -289,6 +306,24 @@ export class EditOrderDialogComponent implements OnInit {
                 console.log('--DEBUG-- updatedOrder: ', updatedOrder);
 
                 this.open(updatedOrder);
+            }
+        });
+    }
+
+    openAdvancedDialog() {
+        console.log('--DEBUG-- advanced dialog opened: ', this.data);
+        const dialogRef = this.dialog.open(DialogAdvanced, {
+            data: {
+                orderNum: this.data.OrderNum,
+                quote: this.data.quote
+            }
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            console.log(`--DEBUG-- advanced dialog result: ${result}`);
+
+            if (result === 'updated') {
+                this.dialogRef.close('deleted');
             }
         });
     }

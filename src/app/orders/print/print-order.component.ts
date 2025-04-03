@@ -18,6 +18,7 @@ import { ErrorDialogWindow } from '../../error/error-dialog.component';
 
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib'
 
+import { ImagesService } from '../../../services/images.service';
 @Component({
     selector: 'print-order',
     templateUrl: './print-order.component.html',
@@ -42,7 +43,10 @@ import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib'
 export class PrintOrderComponent implements OnInit {
     readonly dialog = inject(MatDialog);
     readonly sanitizer = inject(DomSanitizer);
+    readonly imagesService = inject(ImagesService);
+    
     public loading$ = new BehaviorSubject<boolean>(false);
+    
     tabChangedObj: {
         [key: number]: string
     } = {
@@ -63,12 +67,22 @@ export class PrintOrderComponent implements OnInit {
     safePdfUrlShippingManifest: any;
     safePdfSectionName: 'workorderPdfBytes' | 'cuttingListPdfBytes' | 'salesOrderPdfBytes' | 'shippingManifestPdfBytes';
 
+    landingTypeImagesObj: any = {};
+
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: any,
         public dialogRef: MatDialogRef<any>,
     ) {
+        let landingTypeImages: any[] = [];
+
         this.currentOrder = data;
         this.safePdfSectionName = 'workorderPdfBytes';
+
+        landingTypeImages = this.imagesService.getSavedDefaultImages('landing_type_images');
+        landingTypeImages.forEach((landingTypeImage: any) => {
+            this.landingTypeImagesObj[landingTypeImage.ImageText] = landingTypeImage.Image;
+        });
+    
     }
 
     ngOnInit() {
@@ -150,10 +164,14 @@ export class PrintOrderComponent implements OnInit {
         if (bestNumerator === 0) return (isNegative ? "-" : "") + wholePart.toString();
     
         // Ensure correct sign placement
-        const result = bestNumerator === bestDenominator
+        let result = bestNumerator === bestDenominator
             ? (wholePart + 1).toString() // Handle cases like 1 4/4 -> 2
             : `${wholePart} ${bestNumerator}/${bestDenominator}`;
     
+        if (result.length > 1 && result[0] === '0' && result[1] === ' ') {
+            result = result.substr(2);
+        }
+
         return isNegative ? `-${result}` : result;
     }
 
@@ -327,166 +345,201 @@ export class PrintOrderComponent implements OnInit {
 
             location = order.SectionType === 'Winder' ? order.WinderLocation : order.Location;
 
-            if (location?.length >= 20) {
-                let locationArr = this.splitBy2(location, ' ');
+            if (order.SectionType === 'Winder' || order.SectionType === 'Landing') {
+                if (order.SectionType === 'Winder' || order.blurb_winder) {
+                    if (location?.length >= 20) {
+                        let locationArr = this.splitBy2(location, ' ');
+        
+                        extended = 10;
+        
+                        page.drawText(`${locationArr[0]}`, {
+                            x: heightOfDocument,
+                            y: height - 730,
+                            size: tableFontSize,
+                            font: courierFont,
+                            color: rgb(0, 0, 0),
+                            rotate: degrees(90)
+                        });
+                        page.drawText(`${locationArr[1]}`, {
+                            x: heightOfDocument + 13,
+                            y: height - 730,
+                            size: tableFontSize,
+                            font: courierFont,
+                            color: rgb(0, 0, 0),
+                            rotate: degrees(90)
+                        });
+                    } else {
+                        page.drawText(`  ${location}`, {
+                            x: heightOfDocument,
+                            y: height - 730,
+                            size: tableFontSize,
+                            font: courierFont,
+                            color: rgb(0, 0, 0),
+                            rotate: degrees(90)
+                        });
+                    }
+                    
+                    page.drawText(`${order.NumRisers}`, {
+                        x: heightOfDocument,
+                        y: height - 545,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
 
-                extended = 10;
+                    page.drawText(`${order.blurb_winder.replace(/\\n/g, '')}`, {
+                        x: heightOfDocument,
+                        y: height - 475,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0.53, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
 
-                page.drawText(`${locationArr[0]}`, {
-                    x: heightOfDocument,
-                    y: height - 730,
-                    size: tableFontSize,
-                    font: courierFont,
-                    color: rgb(0, 0, 0),
-                    rotate: degrees(90)
-                });
-                page.drawText(`${locationArr[1]}`, {
-                    x: heightOfDocument + 13,
-                    y: height - 730,
-                    size: tableFontSize,
-                    font: courierFont,
-                    color: rgb(0, 0, 0),
-                    rotate: degrees(90)
-                });
+                if (order.SectionType === 'Landing' || order.blurb_landing) {
+                    page.drawText(`${order.blurb_landing.replace(/\\n/g, '')}`, {
+                        x: heightOfDocument,
+                        y: height - 730,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0.53, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
             } else {
-                page.drawText(`  ${location}`, {
+                if (location?.length >= 20) {
+                    let locationArr = this.splitBy2(location, ' ');
+    
+                    extended = 10;
+    
+                    page.drawText(`${locationArr[0]}`, {
+                        x: heightOfDocument,
+                        y: height - 730,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                    page.drawText(`${locationArr[1]}`, {
+                        x: heightOfDocument + 13,
+                        y: height - 730,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                } else {
+                    page.drawText(`  ${location}`, {
+                        x: heightOfDocument,
+                        y: height - 730,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
+    
+                page.drawText(`${order.NumRisers}`, {
                     x: heightOfDocument,
-                    y: height - 730,
+                    y: height - 545,
                     size: tableFontSize,
                     font: courierFont,
                     color: rgb(0, 0, 0),
                     rotate: degrees(90)
                 });
+    
+                page.drawText(`${this.decimalToMixedFraction(order.RiseOfStair)}`, {
+                    x: heightOfDocument,
+                    y: height - 475,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                let run = this.decimalToMixedFraction(order.StairRun);
+    
+                if (order.StairType === 2) {
+                    run = '(2x10)';
+                }
+    
+                if (order.StairType === 3) {
+                    run = '(2x6)';
+                }
+    
+                page.drawText(`${run}`, {
+                    x: heightOfDocument,
+                    y: height - 410,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                let adjRise = `${this.decimalToMixedFraction(order.AdjRise)}`;
+    
+                if (adjRise === '-1/32') adjRise = '-1/16';
+
+                if (order.StairType === 2 && order.AdjRise) {
+                    adjRise = `${adjRise} T`;
+                } else if (order.AdjRise) {
+                    adjRise = `${adjRise} B & T`;
+                }
+        
+                if (adjRise.length < 8) {
+                    adjRise = `   ${adjRise}`
+                }
+    
+                page.drawText(adjRise, {
+                    x: heightOfDocument,
+                    y: height - 350,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                page.drawText(`${this.decimalToMixedFraction(order.OSM)}`, {
+                    x: heightOfDocument,
+                    y: height - 250,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                page.drawText(`${order.NumStringers}`, {
+                    x: heightOfDocument,
+                    y: height - 165,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                page.drawText(`${order.StringerStyle}`, {
+                    x: heightOfDocument,
+                    y: height - 100,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });   
             }
-
-            page.drawText(`${order.NumRisers}`, {
-                x: heightOfDocument,
-                y: height - 545,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${this.decimalToMixedFraction(order.RiseOfStair)}`, {
-                x: heightOfDocument,
-                y: height - 475,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            let run = this.decimalToMixedFraction(order.StairRun);
-
-            if (order.StairType === 2) {
-                run = '(2x10)';
-            }
-
-            if (order.StairType === 3) {
-                run = '(2x6)';
-            }
-
-            page.drawText(`${run}`, {
-                x: heightOfDocument,
-                y: height - 410,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            let adjRise = `${this.decimalToMixedFraction(order.AdjRise)}`;
-
-            if (order.Location === '5/4 PWF Deck') adjRise = '-1/16 B & T';
-
-
-            if (adjRise.length < 8) {
-                adjRise = `   ${adjRise}`
-            }
-
-            page.drawText(adjRise, {
-                x: heightOfDocument,
-                y: height - 350,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${this.decimalToMixedFraction(order.OSM)}`, {
-                x: heightOfDocument,
-                y: height - 250,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${order.NumStringers}`, {
-                x: heightOfDocument,
-                y: height - 165,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${order.StringerStyle}`, {
-                x: heightOfDocument,
-                y: height - 100,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
 
             let comment = order.WorkorderComments || order.OrderType;
 
             comment = comment.replace(/(\r\n|\n|\r)/gm,'')
 
             if (comment) {
-                if (comment.length > 40 && order.blurb_winder) {
-                    const commentsArr = this.splitBy2(comment, ' ');
-
-                    page.drawText(`${commentsArr[0]}`, {
-                        x: heightOfDocument + extended + 13,
-                        y: height - 805,
-                        size: tableFontSize,
-                        font: courierFont,
-                        color: rgb(0, 0.53, 0),
-                        rotate: degrees(90)
-                    });
-
-                    page.drawText(`${commentsArr[1]}`, {
-                        x: heightOfDocument + extended + 26,
-                        y: height - 805,
-                        size: tableFontSize,
-                        font: courierFont,
-                        color: rgb(0, 0.53, 0),
-                        rotate: degrees(90)
-                    });
-
-                    extended += 10;
-                } else {
-                    page.drawText(`${comment}`, {
-                        x: heightOfDocument + extended + 13,
-                        y: height - 805,
-                        size: tableFontSize,
-                        font: courierFont,
-                        color: rgb(0, 0.53, 0),
-                        rotate: degrees(90)
-                    });
-                }
-            }
-
-            if (order.blurb_winder) {
-                page.drawText(`${order.blurb_winder.replace(/\\n/g, '')}`, {
+                page.drawText(`${comment}`, {
                     x: heightOfDocument + extended + 13,
-                    y: height - 490,
+                    y: height - 805,
                     size: tableFontSize,
                     font: courierFont,
-                    color: rgb(0.53, 0, 0),
+                    color: rgb(0, 0.53, 0),
                     rotate: degrees(90)
                 });
             }
@@ -528,9 +581,21 @@ export class PrintOrderComponent implements OnInit {
         }
 
         for (let order of this.data.orders) {
+            let straightLanding = false;
+
+            if (
+                order.SectionType === 'Landing' &&
+                order.StringerStyle1 === 1212
+            ) straightLanding = true;
+
             if (order.Images?.length) {
                 for (let img of order.Images) {
                     try {
+                        if (straightLanding && img.text.includes('LANDING')) {
+                            console.log('--DEBUG-- straightLanding: ', img);
+                            img.img = this.landingTypeImagesObj['LANDINGSTR'];
+                        }
+
                         if (img.img && img.img.indexOf('image/png') !== -1) {
                             console.log('--DEBUG-- 1 png');
                             image = await pdfDoc.embedPng(this.base64ToArrayBuffer(img.img.split(',')[1]));
@@ -751,46 +816,47 @@ export class PrintOrderComponent implements OnInit {
         let heightOfDocument = 180;
         let treadWidth;
 
-        let cutOrderInfo = (hghtOfDcmnt: number, strs: any, cutThePage: boolean = false) => {
-            page.drawText(`SLABS NEEDED FOR TREADS:`, {
-                x: hghtOfDcmnt,
-                y: height - 800,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-    
+        let cutOrderInfo = (hghtOfDcmnt: number, strs: any, cutThePage: boolean = false, oneStair: boolean = false) => {
             let slabsNeeded: any = {};
 
             strs.forEach((stair: any) => {
                 let numWholeSlabsNeeded = stair.numWholeSlabsNeeded;
                 let width = this.decimalToMixedFraction(stair.TreadWidth);
-                let extraTreadsNeeded = stair.extraTreadsNeeded;
+                let extraTreadsNeeded = stair.NumTreads;
 
                 let key = width.toString();
 
-                if (stair.RiserType !== 2) {
-                    console.log('--DEBUG-- treads data: ', {
-                        key,
-                        stairType: stair.StairType,
-                        extraTreadsNeeded: extraTreadsNeeded,
-                        numWholeSlabsNeeded: numWholeSlabsNeeded
-                    });
-    
-                    if (!slabsNeeded[key]) slabsNeeded[key] = {
-                        numWholeSlabsNeeded: 0,
-                        width,
-                        extraTreadsNeeded: 0
-                    };
-                    
-                    let numWholeSlabsNeededNmbr = slabsNeeded[key].numWholeSlabsNeeded + numWholeSlabsNeeded;
-                    let extraTreadsNeededNmbr = slabsNeeded[key].extraTreadsNeeded + extraTreadsNeeded;
+                console.log('--DEBUG-- stair.RiserType: ', stair.RiserType);
+                console.log('--DEBUG-- treads data: ', {
+                    key,
+                    stairType: stair.StairType,
+                    extraTreadsNeeded: extraTreadsNeeded,
+                    numWholeSlabsNeeded: numWholeSlabsNeeded
+                });
 
-                    slabsNeeded[key].numWholeSlabsNeeded = numWholeSlabsNeededNmbr;
-                    slabsNeeded[key].extraTreadsNeeded = extraTreadsNeededNmbr;
-                }
+                if (!slabsNeeded[key]) slabsNeeded[key] = {
+                    numWholeSlabsNeeded: 0,
+                    width,
+                    extraTreadsNeeded: 0
+                };
+                
+                let numWholeSlabsNeededNmbr = slabsNeeded[key].numWholeSlabsNeeded + numWholeSlabsNeeded;
+                let extraTreadsNeededNmbr = slabsNeeded[key].extraTreadsNeeded + extraTreadsNeeded;
+
+                slabsNeeded[key].numWholeSlabsNeeded = numWholeSlabsNeededNmbr;
+                slabsNeeded[key].extraTreadsNeeded = extraTreadsNeededNmbr;
             });
+
+            if (Object.keys(slabsNeeded).length) {
+                page.drawText(`SLABS NEEDED FOR TREADS:`, {
+                    x: hghtOfDcmnt,
+                    y: height - 800,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
 
             Object.keys(slabsNeeded).forEach((slabsNeededKey: any) => {
                 page.drawText(`${slabsNeeded[slabsNeededKey].numWholeSlabsNeeded}`, {
@@ -843,15 +909,6 @@ export class PrintOrderComponent implements OnInit {
                 hghtOfDcmnt += 15;
             });
     
-            page.drawText(`1/2 RISER SLABS needed:`, {
-                x: hghtOfDcmnt,
-                y: height - 800,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-    
             let halfInchSlabsNeeded: any = {};
 
             strs.forEach((stair: any) => {
@@ -882,6 +939,17 @@ export class PrintOrderComponent implements OnInit {
                     halfInchSlabsNeeded[key].numExtraRisersNeeded = numExtraRisersNeededNmbr;
                 }
             });
+
+            if (Object.keys(halfInchSlabsNeeded).length) {
+                page.drawText(`1/2" RISER SLABS needed:`, {
+                    x: hghtOfDcmnt,
+                    y: height - 800,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
 
             Object.keys(halfInchSlabsNeeded).forEach((halfInchSlabsNeededKey: any) => {
                 let numWholeSlabsNeededTotal = halfInchSlabsNeeded[halfInchSlabsNeededKey].numWholeSlabsNeededTotal;
@@ -937,37 +1005,70 @@ export class PrintOrderComponent implements OnInit {
                 hghtOfDcmnt += 15;
             });
     
-    
-            page.drawText(`LEFTOVER from tread slabs:                           #can be made`, {
-                x: hghtOfDcmnt,
-                y: height - 800,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-    
-            hghtOfDcmnt += 15;
-    
-            page.drawText(`# standart risers can be made:`, {
-                x: hghtOfDcmnt,
-                y: height - 700,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
+            if (oneStair) {
+                page.drawText(`LEFTOVER from tread slabs:                           One slab (below)                   All slabs(below)`, {
+                    x: hghtOfDcmnt,
+                    y: height - 800,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+        
+                hghtOfDcmnt += 15;
+        
+                page.drawText(`# standart risers can be made:                      ${strs[0].TreadLeftoverStdRisers}                         ${strs[0].AllSlabsLeftoverStdRisers}`, {
+                    x: hghtOfDcmnt,
+                    y: height - 700,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+                
+                hghtOfDcmnt += 15;
+        
+                page.drawText(`# of lower risers can be made:                      ${strs[0].TreadLeftoverLowerRisers}                         ${strs[0].AllSlabsLeftoverLowerRisers}`, {
+                    x: hghtOfDcmnt,
+                    y: height - 700,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            } else {
+                page.drawText(`LEFTOVER from tread slabs:                           #can be made`, {
+                    x: hghtOfDcmnt,
+                    y: height - 800,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+        
+                hghtOfDcmnt += 15;
+        
+                page.drawText(`# standart risers can be made:`, {
+                    x: hghtOfDcmnt,
+                    y: height - 700,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+                
+                hghtOfDcmnt += 15;
+        
+                page.drawText(`# of lower risers can be made:`, {
+                    x: hghtOfDcmnt,
+                    y: height - 700,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
             
-            hghtOfDcmnt += 15;
-    
-            page.drawText(`# standart risers can be made:`, {
-                x: hghtOfDcmnt,
-                y: height - 700,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
     
             hghtOfDcmnt += 25;
     
@@ -977,20 +1078,11 @@ export class PrintOrderComponent implements OnInit {
     
                 hghtOfDcmnt = 35;
             }
-
-            page.drawText(`Threads:`, {
-                x: hghtOfDcmnt,
-                y: height - 650,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
     
             let treads: any = {};
 
             strs.forEach((stair: any) => {
-                if (stair.numRisersNeeded < 0) stair.numRisersNeeded = 0; 
+                if (stair.NumTreads < 0) stair.NumTreads = 0; 
 
                 let tW = stair.TreadWidth;
                 let run = this.decimalToMixedFraction(stair.TreadRun);
@@ -1009,7 +1101,7 @@ export class PrintOrderComponent implements OnInit {
                 console.log('--DEBUG-- treads data: ', {
                     key,
                     stairType: stair.StairType,
-                    numRisersNeeded: stair.numRisersNeeded,
+                    numRisersNeeded: stair.NumTreads,
                     run: run
                 });
 
@@ -1019,11 +1111,46 @@ export class PrintOrderComponent implements OnInit {
                     run: run
                 };
                 
-                let pieces = treads[key].pieces + stair.numRisersNeeded;
+                let pieces = treads[key].pieces + stair.NumTreads;
 
                 treads[key].pieces = pieces;
             });
 
+            if (oneStair) {
+                if (Object.keys(treads).length) {
+                    let treadsName = strs[0].TreadType;
+                    let distance = 685;
+
+                    if (strs[0].Location === 'Garage') {
+                        distance = 670;
+                    }
+
+                    if (strs[0].Location === 'Deck') {
+                        distance = 670;
+                    }
+
+                    page.drawText(`${treadsName}:`, {
+                        x: hghtOfDcmnt,
+                        y: height - distance,
+                        size: fontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
+            } else {
+                if (Object.keys(treads).length) {
+                    page.drawText(`Treads:`, {
+                        x: hghtOfDcmnt,
+                        y: height - 650,
+                        size: fontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
+            }
+            
             Object.keys(treads).forEach((tread: any) => {
                 page.drawText(`${treads[tread].pieces} ${this.pieceMaker(treads[tread].pieces)}`, {
                     x: hghtOfDcmnt,
@@ -1062,45 +1189,49 @@ export class PrintOrderComponent implements OnInit {
     
                 hghtOfDcmnt = 35;
             }
-            
-            page.drawText(`RISERS Standart:`, {
-                x: hghtOfDcmnt,
-                y: height - 700,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
 
             let risers: any = {};
     
             strs.forEach((stair: any) => {
-                let numStdRisers = stair.NumStdRisers;
-                let cutRise = this.decimalToMixedFraction(stair.CutRise);
-                let rW = this.decimalToMixedFraction(stair.RiserWidth);
+                if (Number(stair.RiserType) === 1 || Number(stair.RiserType) === 3) {
+                    let numStdRisers = stair.NumStdRisers;
+                    let cutRise = this.decimalToMixedFraction(stair.CutRise);
+                    let rW = this.decimalToMixedFraction(stair.RiserWidth);
 
-                let key = rW.toString() + cutRise.toString();
+                    let key = rW.toString() + cutRise.toString();
 
-                console.log('--DEBUG-- risers data: ', {
-                    key,
-                    stairType: stair.StairType,
-                    numStdRisers,
-                    cutRise,
-                    rW
-                });
+                    console.log('--DEBUG-- risers data: ', {
+                        key,
+                        stairType: stair.StairType,
+                        numStdRisers,
+                        cutRise,
+                        rW
+                    });
 
-                if (stair.StairType !== 2 && stair.StairType !== 3) {
-                    if (!risers[key]) risers[key] = {
-                        pieces: 0,
-                        width: rW,
-                        rise: cutRise
-                    };
-                    
-                    let pieces = risers[key].pieces + numStdRisers;
+                    if (stair.StairType !== 2 && stair.StairType !== 3) {
+                        if (!risers[key]) risers[key] = {
+                            pieces: 0,
+                            width: rW,
+                            rise: cutRise
+                        };
+                        
+                        let pieces = risers[key].pieces + numStdRisers;
 
-                    risers[key].pieces = pieces;   
+                        risers[key].pieces = pieces;   
+                    }
                 }
             });
+
+            if (Object.keys(risers).length) {
+                page.drawText(`RISERS Standart:`, {
+                    x: hghtOfDcmnt,
+                    y: height - 700,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
 
             Object.keys(risers).forEach((riser: any) => {
                 page.drawText(`${risers[riser].pieces} ${this.pieceMaker(risers[riser].pieces)}`, {
@@ -1140,35 +1271,39 @@ export class PrintOrderComponent implements OnInit {
                 hghtOfDcmnt = 35;
             }
     
-            page.drawText(`Bottom RISERS:`, {
-                x: hghtOfDcmnt,
-                y: height - 690,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-    
             let bottomRisers: any = {};
 
             strs.forEach((stair: any) => {
-                let rW = this.decimalToMixedFraction(stair.RiserWidth);
-                let rise = this.decimalToMixedFraction(stair.CutBottomRise);
+                if (Number(stair.RiserType) === 1 || Number(stair.RiserType) === 3) {
+                    let rW = this.decimalToMixedFraction(stair.RiserWidth);
+                    let rise = this.decimalToMixedFraction(stair.CutBottomRise);
 
-                let key = rW.toString() + rise.toString();
+                    let key = rW.toString() + rise.toString();
 
-                if (stair.StairType !== 2 && stair.StairType !== 3) {
-                    if (!bottomRisers[key]) bottomRisers[key] = {
-                        pieces: 0,
-                        width: rW,
-                        rise
-                    };
-                    
-                    let pieces = bottomRisers[key].pieces + 1;
+                    if (stair.StairType !== 2 && stair.StairType !== 3) {
+                        if (!bottomRisers[key]) bottomRisers[key] = {
+                            pieces: 0,
+                            width: rW,
+                            rise
+                        };
+                        
+                        let pieces = bottomRisers[key].pieces + 1;
 
-                    bottomRisers[key].pieces = pieces;   
+                        bottomRisers[key].pieces = pieces;   
+                    }
                 }
             });
+
+            if (Object.keys(bottomRisers).length) {
+                page.drawText(`Bottom RISERS:`, {
+                    x: hghtOfDcmnt,
+                    y: height - 690,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
 
             Object.keys(bottomRisers).forEach((bottomRiser: any) => {
                 page.drawText(`${bottomRisers[bottomRiser].pieces} ${this.pieceMaker(bottomRisers[bottomRiser].pieces)}`, {
@@ -1207,15 +1342,6 @@ export class PrintOrderComponent implements OnInit {
     
                 hghtOfDcmnt = 35;
             }
-
-            page.drawText(`TOP RISER:`, {
-                x: hghtOfDcmnt,
-                y: height - 665,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
     
             let topRisers: any = {};
 
@@ -1236,6 +1362,17 @@ export class PrintOrderComponent implements OnInit {
 
                 topRisers[key].pieces = pieces;
             });
+
+            if (Object.keys(topRisers).length) {
+                page.drawText(`TOP RISER:`, {
+                    x: hghtOfDcmnt,
+                    y: height - 665,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
 
             Object.keys(topRisers).forEach((topRiser: any) => {
                 page.drawText(`${topRisers[topRiser].pieces} ${this.pieceMaker(topRisers[topRiser].pieces)}`, {
@@ -1280,6 +1417,7 @@ export class PrintOrderComponent implements OnInit {
             return hghtOfDcmnt;
         }
 
+        console.log('--DEBUG-- cutOrderInfo stairs: ', stairs);
         heightOfDocument = cutOrderInfo(heightOfDocument, stairs, true);
 
         page.drawText('Note: If there are any discrepancies between consolidated list and individual job lists please', {
@@ -1330,23 +1468,34 @@ export class PrintOrderComponent implements OnInit {
                 rotate: degrees(90)
             });
 
-            page.drawText(`Location`, {
-                x: heightOfDocument,
-                y: height - 750,
-                size: fontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${order.Location}`, {
-                x: heightOfDocument,
-                y: height - 650,
-                size: imageLabelSize,
-                font: titleCourierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
+            if (order.SectionType === 'Landing') {
+                page.drawText(`${order.blurb_landing}`, {
+                    x: heightOfDocument,
+                    y: height - 730,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            } else {
+                page.drawText(`Location`, {
+                    x: heightOfDocument,
+                    y: height - 750,
+                    size: fontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                page.drawText(`${order.Location}`, {
+                    x: heightOfDocument,
+                    y: height - 650,
+                    size: imageLabelSize,
+                    font: titleCourierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+            }
 
             heightOfDocument += 25;
 
@@ -1530,7 +1679,7 @@ export class PrintOrderComponent implements OnInit {
             }
 
             if (order.SectionType === 'Stair') {
-                heightOfDocument = cutOrderInfo(heightOfDocument, [order]);
+                heightOfDocument = cutOrderInfo(heightOfDocument, [order], false,  true);
             }
 
             page.drawLine({
@@ -1540,7 +1689,7 @@ export class PrintOrderComponent implements OnInit {
                 color: rgb(0, 0, 0),
             });
 
-            if (heightOfDocument > 500) {
+            if (heightOfDocument > 450) {
                 page = pdfDoc.addPage();
                 page.setRotation(degrees(90));
     
@@ -2023,103 +2172,169 @@ export class PrintOrderComponent implements OnInit {
 
             location = order.SectionType === 'Winder' ? order.WinderLocation : order.Location;
 
-            if (location?.length >= 20) {
-                let locationArr = this.splitBy2(location, ' ');
-
-                extended = 10;
-
-                page.drawText(`${locationArr[0]}`, {
-                    x: heightOfDocument,
-                    y: height - 805,
-                    size: tableFontSize,
-                    font: courierFont,
-                    color: rgb(0, 0, 0),
-                    rotate: degrees(90)
-                });
-                page.drawText(`${locationArr[1]}`, {
-                    x: heightOfDocument + 13,
-                    y: height - 805,
-                    size: tableFontSize,
-                    font: courierFont,
-                    color: rgb(0, 0, 0),
-                    rotate: degrees(90)
-                });
+            
+            if (order.SectionType === 'Winder' || order.SectionType === 'Landing') {
+                if (order.SectionType === 'Winder' && order.blurb_winder) {
+                    if (location?.length >= 20) {
+                        let locationArr = this.splitBy2(location, ' ');
+        
+                        extended = 10;
+        
+                        page.drawText(`${locationArr[0]}`, {
+                            x: heightOfDocument,
+                            y: height - 805,
+                            size: tableFontSize,
+                            font: courierFont,
+                            color: rgb(0, 0, 0),
+                            rotate: degrees(90)
+                        });
+                        page.drawText(`${locationArr[1]}`, {
+                            x: heightOfDocument + 13,
+                            y: height - 805,
+                            size: tableFontSize,
+                            font: courierFont,
+                            color: rgb(0, 0, 0),
+                            rotate: degrees(90)
+                        });
+                    } else {
+                        page.drawText(`  ${location}`, {
+                            x: heightOfDocument,
+                            y: height - 805,
+                            size: tableFontSize,
+                            font: courierFont,
+                            color: rgb(0, 0, 0),
+                            rotate: degrees(90)
+                        });
+                    }
+                    
+                    page.drawText(`${order.blurb_winder.replace(/\\n/g, '')}`, {
+                        x: heightOfDocument,
+                        y: height - 675,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0.53, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
+    
+                if (order.SectionType === 'Landing' && order.blurb_landing) {
+                    page.drawText(`${order.blurb_landing.replace(/\\n/g, '')}`, {
+                        x: heightOfDocument,
+                        y: height - 805,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0.53, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
             } else {
-                page.drawText(`  ${location}`, {
+                if (location?.length >= 20) {
+                    let locationArr = this.splitBy2(location, ' ');
+    
+                    extended = 10;
+    
+                    page.drawText(`${locationArr[0]}`, {
+                        x: heightOfDocument,
+                        y: height - 805,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                    page.drawText(`${locationArr[1]}`, {
+                        x: heightOfDocument + 13,
+                        y: height - 805,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                } else {
+                    page.drawText(`  ${location}`, {
+                        x: heightOfDocument,
+                        y: height - 805,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
+    
+                page.drawText(`${this.decimalToMixedFraction(order.Length)}`, {
                     x: heightOfDocument,
-                    y: height - 805,
+                    y: height - 675,
                     size: tableFontSize,
                     font: courierFont,
                     color: rgb(0, 0, 0),
                     rotate: degrees(90)
                 });
-            }
-
-            page.drawText(`${this.decimalToMixedFraction(order.Length)}`, {
-                x: heightOfDocument,
-                y: height - 675,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${this.decimalToMixedFraction(order.OSM)}`, {
-                x: heightOfDocument,
-                y: height - 590,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${this.decimalToMixedFraction(order.Height)}`, {
-                x: heightOfDocument,
-                y: height - 520,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            let risersNum = `${this.decimalToMixedFraction(order.Qty)}`;
-
-            page.drawText(risersNum, {
-                x: heightOfDocument,
-                y: height - 410,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${this.decimalToMixedFraction(order.RiseOfStair)}`, {
-                x: heightOfDocument,
-                y: height - 340,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            page.drawText(`${this.decimalToMixedFraction(order.StairRun)}`, {
-                x: heightOfDocument,
-                y: height - 275,
-                size: tableFontSize,
-                font: courierFont,
-                color: rgb(0, 0, 0),
-                rotate: degrees(90)
-            });
-
-            if (order.blurb_winder) {
-                page.drawText(`${order.blurb_winder.replace(/\\n/g, '')}`, {
-                    x: heightOfDocument + extended + 13,
-                    y: height - 490,
+    
+                page.drawText(`${this.decimalToMixedFraction(order.OSM)}`, {
+                    x: heightOfDocument,
+                    y: height - 590,
                     size: tableFontSize,
                     font: courierFont,
-                    color: rgb(0.53, 0, 0),
+                    color: rgb(0, 0, 0),
                     rotate: degrees(90)
                 });
+    
+                page.drawText(`${this.decimalToMixedFraction(order.Height)}`, {
+                    x: heightOfDocument,
+                    y: height - 520,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                let risersNum = `${this.decimalToMixedFraction(order.Qty)}`;
+    
+                page.drawText(risersNum, {
+                    x: heightOfDocument,
+                    y: height - 410,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                page.drawText(`${this.decimalToMixedFraction(order.RiseOfStair)}`, {
+                    x: heightOfDocument,
+                    y: height - 340,
+                    size: tableFontSize,
+                    font: courierFont,
+                    color: rgb(0, 0, 0),
+                    rotate: degrees(90)
+                });
+    
+                if (order.Location === 'Garage') {
+                    page.drawText(`(2x10)`, {
+                        x: heightOfDocument,
+                        y: height - 275,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                } else if (order.Location === 'Deck') {
+                    page.drawText(`(2x6)`, {
+                        x: heightOfDocument,
+                        y: height - 275,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                } else {
+                    page.drawText(`${this.decimalToMixedFraction(order.StairRun)}`, {
+                        x: heightOfDocument,
+                        y: height - 275,
+                        size: tableFontSize,
+                        font: courierFont,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(90)
+                    });
+                }
             }
 
             heightOfDocument += 20 + extended;

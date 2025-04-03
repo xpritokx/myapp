@@ -97,6 +97,40 @@ export class OrdersService {
         });
     };
 
+    duplicateOrder(orderNum: number, quote: boolean) {
+        const url = `orders/duplicate/duplicate`;
+
+        return new Promise((resolve, reject) => {
+            this.httpService.post(url,  {
+                orderNum,
+                quote
+            },(result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+                
+                resolve(result);
+            });
+        });
+    }
+
+    convertOrderIntoQuote(orderNum: number, quote: boolean) {
+        const url = `orders/duplicate/convert`;
+
+        return new Promise((resolve, reject) => {
+            this.httpService.post(url,  {
+                orderNum,
+                quote
+            },(result: any, error: any) => {
+                if (error) {
+                    return reject(error);
+                }
+                
+                resolve(result);
+            });
+        });
+    }
+
     addStair(data: {
         id: number,
         orderNum: number
@@ -220,4 +254,101 @@ export class OrdersService {
             });
         });
     };
+
+    validation(fields: any) {
+        if (fields.sectionType === 'Stair') {
+            if (!fields.location) {
+                return {
+                    status: false,
+                    message: '"Location" is required field'
+                }
+            }
+    
+            if (!fields.height) {
+                return {
+                    status: false,
+                    message: '"Height" is required field'
+                }
+            }
+    
+            if (!fields.width) {
+                return {
+                    status: false,
+                    message: '"Width" is required field'
+                }
+            }
+    
+            if (!fields.lngth) {
+                return {
+                    status: false,
+                    message: '"Length" is required field'
+                }
+            }
+        }
+        
+
+        if (fields.sectionType === 'Winder') {
+            if (!fields.winderType) {
+                return {
+                    status: false,
+                    message: '"Winder Type" is required field'
+                }
+            }
+
+            if (!fields.winderRise) {
+                return {
+                    status: false,
+                    message: '"Winder Rise" is required field'
+                }
+            }
+
+            if (!fields.winderPickup) {
+                return {
+                    status: false,
+                    message: '"Pickup" is required field'
+                }
+            }
+
+            if (!fields.winderOn1) {
+                return {
+                    status: false,
+                    message: '"on #1" is required field'
+                }
+            }
+
+            if (!fields.winderOn3) {
+                return {
+                    status: false,
+                    message: '"on #3" is required field'
+                }
+            }
+
+            if (!fields.winderWrap) {
+                return {
+                    status: false,
+                    message: '"Wrap" is required field'
+                }
+            }
+        }
+
+        if (fields.sectionType === 'Landing') {
+            if (!fields.landingType) {
+                return {
+                    status: false,
+                    message: '"Landing Type" is required field'
+                }
+            }
+
+            if (!fields.landingPickup) {
+                return {
+                    status: false,
+                    message: '"Pickup" is required field'
+                }
+            }
+        }
+
+        return {
+            status: true
+        }
+    }
 }

@@ -6,7 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
@@ -14,10 +13,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 
-import { SelectImageDetail } from '../select-image-detail/select-image-detail.component';
+import { SelectStairShapeDetail } from '../select-stair-shape-detail/select-stair-shape-detail.component';
 import { DeleteStairDialogComponent } from '../delete-stair/delete-stair.component';
 import { ShowMethodsInfoDialog } from '../../info/showMethodsInfo/show-methods-info.component';
 import { SuccessDialogWindow } from '../../success/success-dialog.component';
@@ -62,7 +63,6 @@ export class OrderDetailsComponent implements OnInit {
     selectedFile: File | null = null;
     uploadSuccess: boolean = false;
     uploadError: boolean = false;
-    riseCountWasChanged:boolean = false;
     divisor: number = 0;
 
     imageIndexStrcss:number = 0;
@@ -92,6 +92,11 @@ export class OrderDetailsComponent implements OnInit {
     updatedLabel = false;
 
     materialFields = [{
+        value: 'not-selected',
+        viewValue: 'Not selected'
+    }];
+
+    materialFieldsData = [{
         value: 'not-selected',
         viewValue: 'Not selected'
     }];
@@ -248,8 +253,14 @@ export class OrderDetailsComponent implements OnInit {
     stairStyles:any = [];
     stairTypes:any = [];
     stringerStyles:any = [];
+    winderTypeImages: any[] = [];
+    imagesFromServer: any[] = [];
+    landingTypeImages: any[] = [];
 
     materialsDisabled: boolean = false;
+
+    public winderTypeSelected = new FormControl();
+    public landingTypeSelected = new FormControl();
 
     orderDetailsForm = new FormGroup({
         height: new FormControl(0),
@@ -279,6 +290,7 @@ export class OrderDetailsComponent implements OnInit {
         winderRise: new FormControl(0),
         winderPickup: new FormControl(0),
         winderWrap: new FormControl(0),
+        winderType: new FormControl(''),
         winderOn1: new FormControl(0),
         winderOn3: new FormControl(0),
         winderSeat: new FormControl(false),
@@ -298,8 +310,8 @@ export class OrderDetailsComponent implements OnInit {
         sill: new FormControl(0),
         opening: new FormControl(0),
         joist: new FormControl(0),
-        headroomTotal: new FormControl(0)
-
+        headroomTotal: new FormControl(0),
+        third: new FormControl(0) 
     });
 
     orderCommentsForm = new FormGroup({
@@ -339,10 +351,12 @@ export class OrderDetailsComponent implements OnInit {
         this.stairTypes = this.stairTypesService.getSavedStairTypes();
         this.stairStyles = this.stairStylesService.getSavedStairStyles();
         this.stringerStyles = this.stringerStylesService.getSavedStringerStyles();
+        this.winderTypeImages = this.imagesService.getSavedDefaultImages('winder_type_images');
+        this.landingTypeImages = this.imagesService.getSavedDefaultImages('landing_type_images');
 
-        this.selectedSectionTypeField = this.data.SectionType;
+        console.log('--DEBUG-- landingTypeImages: ', this.landingTypeImages);
 
-        this.materialFields = this.materials.map((material: any) => {
+        this.materialFieldsData = this.materials.map((material: any) => {
             if (this.data.Materials === material.Material) {
                 this.selectedMaterialsField = material.ID;
             }
@@ -352,6 +366,8 @@ export class OrderDetailsComponent implements OnInit {
                 viewValue: material.Material
             };
         });
+
+        this.materialFields = this.materialFieldsData;
 
         this.riserTypesFields = this.riserTypes.map((riserType: any) => {
             if (this.data.RiserType === riserType.ID) {
@@ -365,6 +381,8 @@ export class OrderDetailsComponent implements OnInit {
         });
 
         this.stairTypesFields = this.stairTypes.map((stairType: any) => {
+            console.log('--DEBUG-- stair type: ', this.data.StairType);
+            console.log('--DEBUG-- stairType.ID: ', stairType.ID);
             if (this.data.StairType === stairType.ID) {
                 this.selectedStairTypeField = stairType.ID;
             }
@@ -402,6 +420,16 @@ export class OrderDetailsComponent implements OnInit {
         });
 
         this.selectedMethodField = data.Method || this.methodsMockData[0].value;
+        this.selectedSectionTypeField = this.data.SectionType;
+        this.winderTypeSelected.setValue(this.data.PicText || '');
+
+        if (this.data.StringerStyle1 === 1212) {
+            this.landingTypeSelected.setValue('LANDINGSTR');
+        } else {
+            this.landingTypeSelected.setValue(this.data.PicText || '');
+        }
+
+        console.log('--DEBUG-- selectedMethodField: ', this.selectedMethodField);
 
         this.location.setValue(data.Location);
         data.locationName = data.Location;
@@ -435,25 +463,27 @@ export class OrderDetailsComponent implements OnInit {
             winderPickup: new FormControl(data.WinderPickup),
             winderWrap: new FormControl(data.WinderWrap),
             winderOn1: new FormControl(data.WinderOn1),
+            winderType: new FormControl(data.PicText),
             winderOn3: new FormControl(data.WinderOn3),
             winderSeat: new FormControl(data.WinderSeat),
             winderCutCorner: new FormControl(data.WinderCutCorner),
             winderSeatLength: new FormControl(data.WinderSeatLength),
             blurb_winder: new FormControl(data.blurb_winder),
-            landingSeat: new FormControl(data.Landing_Seat),
-            landingPickup: new FormControl(data.Landing_PU),
-            landingWrap: new FormControl(data.Landing_Wrap),
-            landingPickupOSM: new FormControl(data.Landing_PU_OSM),
-            landingWrapOSM: new FormControl(data.Landing_Wrap_OSM),
+            landingSeat: new FormControl(data.Landing_Seat.toFixed(3)),
+            landingPickup: new FormControl(data.Landing_PU.toFixed(3)),
+            landingWrap: new FormControl(data.Landing_Wrap.toFixed(3)),
+            landingPickupOSM: new FormControl(data.Landing_PU_OSM.toFixed(3)),
+            landingWrapOSM: new FormControl(data.Landing_Wrap_OSM.toFixed(3)),
             langingOnFloor: new FormControl(data.Landing_On_Floor),
-            custDeck: new FormControl(1.5),
-            custGarage: new FormControl(1.5),
+            custDeck: new FormControl(0),
+            custGarage: new FormControl(0),
             custStyle1Adj: new FormControl(1.5),
             custStyle2Adj: new FormControl(1.5),
             sill: new FormControl(data.Sill),
             opening: new FormControl(data.Opening),
             joist: new FormControl(data.Joist),
-            headroomTotal: new FormControl(data.Opening + data.Joist)
+            headroomTotal: new FormControl(data.Opening + data.Joist),
+            third: new FormControl(data.third),
         });
 
         this.orderCommentsForm = new FormGroup({
@@ -477,13 +507,20 @@ export class OrderDetailsComponent implements OnInit {
     }
 
     ngOnInit() {
-        let img = this.data.Images?.length && this.data.Images[0].img || '';
+        let img;
         let method;
 
         this.orderDetailsForm.get('run')?.disable();
         this.orderDetailsForm.get('rise')?.disable();
         this.orderDetailsForm.get('treadsCount')?.disable();
-        this.orderDetailsForm.get('riseCount')?.disable();
+
+        if (this.data.SectionType === 'Stair') {
+            this.orderDetailsForm.get('riseCount')?.disable();
+        }
+
+        if (this.data.SectionType === 'Winder') {
+            this.orderDetailsForm.get('riseCount')?.enable();
+        }
         
         method = this.orderDetailsForm.get('method')?.value;
 
@@ -513,11 +550,15 @@ export class OrderDetailsComponent implements OnInit {
         const topRightImages = this.imagesService.getSavedDefaultImages('top_right_images');
         const bottomLeftImages = this.imagesService.getSavedDefaultImages('bottom_left_images');
         const bottomRightImages = this.imagesService.getSavedDefaultImages('bottom_right_images');
+        const winderTypeImages = this.winderTypeImages;
+        const landingTypeImages = this.landingTypeImages;
 
         const topLeftImagesObj: any = {};
         const topRightImagesObj: any = {};
         const bottomLeftImagesObj: any = {};
         const bottomRightImagesObj: any = {};
+        const winderTypeImagesObj: any = {};
+        const landingTypeImagesObj: any = {};
 
         topLeftimages.forEach((topLeftimage: any) => {
             topLeftImagesObj[topLeftimage.ImageText] = topLeftimage.Image;
@@ -534,16 +575,26 @@ export class OrderDetailsComponent implements OnInit {
         bottomRightImages.forEach((bottomRightImage: any) => {
             bottomRightImagesObj[bottomRightImage.ImageText] = bottomRightImage.Image;
         });
+
+        winderTypeImages.forEach((winderTypeImage: any) => {
+            winderTypeImagesObj[winderTypeImage.ImageText] = winderTypeImage.Image;
+        });
+
+        landingTypeImages.forEach((landingTypeImage: any) => {
+            landingTypeImagesObj[landingTypeImage.ImageText] = landingTypeImage.Image;
+        });
     
-        console.log('--DEBUG-- images bullnose and flairs: ', {
+        console.log('--DEBUG-- images bullnose and flairs and winder types: ', {
             topLeftImagesObj,
             topRightImagesObj,
             bottomLeftImagesObj,
-            bottomRightImagesObj
+            bottomRightImagesObj,
+            winderTypeImagesObj,
+            landingTypeImagesObj,
         });
 
-        let imagesFromServer = this.data.Images.filter((i: any) => {
-            return !i.type.includes('Flair') || !i.type.includes('Bull');
+        this.imagesFromServer = this.data.Images.filter((i: any) => {
+            return !i.type.includes('Flair') && !i.type.includes('Bull') && !i.type.includes('StairType');
         });
         let altImages = [];
 
@@ -559,12 +610,27 @@ export class OrderDetailsComponent implements OnInit {
         if (this.data.blurb_right_flair) altImages.push({
             img: topRightImagesObj[`${this.data.blurb_right_flair}_R`]
         });
+        if (Number(this.data.CustomWindersL) === 1 || Number(this.data.CustomWindersR) === 1) {
+            if (winderTypeImagesObj[this.winderTypeSelected.value]) {
+                altImages.push({
+                    img: winderTypeImagesObj[this.winderTypeSelected.value] || ''
+                });
+            }
+        }
 
-        console.log('--DEBUG-- alt Images: ', altImages);
+        if (this.data.SectionType === 'Landing') {
+            if (landingTypeImagesObj[this.landingTypeSelected.value]) {
+                altImages.push({
+                    img: landingTypeImagesObj[this.landingTypeSelected.value] || ''
+                });
+            }
+        }
+
+        img = this.imagesFromServer?.length && this.imagesFromServer[0].img || '';
 
         this.imgs$.next([
             ...altImages,
-            ...imagesFromServer
+            ...this.imagesFromServer
         ]);
 
         console.log('--DEBUG-- first image: ', img);
@@ -587,7 +653,13 @@ export class OrderDetailsComponent implements OnInit {
 
         this.orderDetailsForm.get('divisor')?.setValue(this.divisor);
 
-        this.reCalculateEverything();
+        if (this.data.SectionType === 'Stair') {
+            this.reCalculateEverything();
+        }
+
+        if (this.data.SectionType === 'Winder') {
+            this.reCalculateEverythingForWinder();
+        }
     }
 
     async save() {
@@ -600,7 +672,7 @@ export class OrderDetailsComponent implements OnInit {
         let workorderComments = this.orderCommentsForm.get('workorderComments')?.value;
         let invoiceComments = this.orderCommentsForm.get('invoiceComments')?.value;
         let billingComments = this.orderCommentsForm.get('billingComments')?.value;
-        let sectionType = this.data.SectionType;
+        let sectionType = this.selectedSectionTypeField;
 
         connectedStairsToSave = connectedStairsToSave ? connectedStairsToSave + '$' : connectedStairsToSave;
 
@@ -608,9 +680,7 @@ export class OrderDetailsComponent implements OnInit {
 
         let updateObj: object = {};
 
-        if (this.data.SectionType === 'Stair') {
-            //console.log('--DEBUG-- stair location 2: ', this.location.value);
-
+        if (sectionType === 'Stair') {
             let location = this.location.value;
             let numberOfRises = this.orderDetailsForm.get('riseCount')?.value;
             let numberOfTreads = this.orderDetailsForm.get('treadsCount')?.value
@@ -621,8 +691,9 @@ export class OrderDetailsComponent implements OnInit {
             let lngth = this.orderDetailsForm.get('length')?.value;
             let height = this.orderDetailsForm.get('height')?.value;
             let width = this.orderDetailsForm.get('width')?.value;
-            let method = this.orderDetailsForm.get('method')?.value;
+            let method = this.selectedMethodField;
             let notch = this.orderDetailsForm.get('notch')?.value;
+            let third = this.orderDetailsForm.get('third')?.value;
             let headroomMatters = this.orderDetailsForm.get('headroomMatters')?.value;
             let noNosing =this.orderDetailsForm.get('noNosing')?.value;
             let thirdAndFurred = this.orderDetailsForm.get('furred')?.value;
@@ -632,12 +703,16 @@ export class OrderDetailsComponent implements OnInit {
             let stringerStyle2 = this.orderDetailsForm.get('stringerStyle2')?.value;
             let divisor = this.orderDetailsForm.get('divisor')?.value;
 
+            let joist = this.orderDetailsForm.get('joist')?.value;
+            let opening = this.orderDetailsForm.get('opening')?.value;
+            let sill = this.orderDetailsForm.get('sill')?.value;
+
             let calculatedObj = this.recalculateAccuratelyForOneMethod(method as string, this.methodsData[method as string]);
             let osm = calculatedObj.topRiserWidth;
             let oneInchPly = calculatedObj.oneInch;
             let halfInchPly = calculatedObj.halfInch;
-            let meas2X6 = calculatedObj.twoTenInch;
-            let meas2X10 = calculatedObj.twoSixInch;
+            let meas2X6 = calculatedObj.twoSixInch;
+            let meas2X10 = calculatedObj.twoTenInch;
             let meas2X12 = calculatedObj.twoTwelve;
 
             //WorkOrderExtensions
@@ -656,6 +731,7 @@ export class OrderDetailsComponent implements OnInit {
                 width,
                 method,
                 notch,
+                third,
                 headroomMatters,
                 offTheTop,
                 noNosing,
@@ -670,6 +746,10 @@ export class OrderDetailsComponent implements OnInit {
                 meas2X6,
                 meas2X10,
                 meas2X12,
+
+                joist,
+                opening,
+                sill,
 
                 blurb_left_flair: this.blurb_left_flair && this.blurb_left_flair.split('_')[0] || '',
                 blurb_right_flair: this.blurb_right_flair && this.blurb_right_flair.split('_')[0] || '',
@@ -688,14 +768,25 @@ export class OrderDetailsComponent implements OnInit {
                 invoiceComments,
             };
 
-            this.updatedLabel$.next(true);
+            let validation = this.ordersService.validation(updateObj);
+
+            if (!validation.status) {
+                this.dialog.open(ErrorDialogWindow, {
+                    data: {
+                        errorMessage: validation.message
+                    }
+                });
+
+                return;
+            }
         }
 
-        if (this.data.SectionType === 'Winder') {
+        if (sectionType === 'Winder') {
             let location = this.location.value;
             let numberOfRises = this.orderDetailsForm.get('riseCount')?.value;
             let stairStyle = this.selectedStairStyleField;
             let riserType = this.selectedRiserTypeField;
+            let winderType = this.winderTypeSelected.value;
 
             let winderRise = this.orderDetailsForm.get('winderRise')?.value;
             let winderPickup = this.orderDetailsForm.get('winderPickup')?.value;
@@ -716,6 +807,7 @@ export class OrderDetailsComponent implements OnInit {
                 winderRise,
                 winderWrap,
                 winderPickup,
+                winderType,
                 winderOn1,
                 winderOn3,
                 winderSeat,
@@ -732,9 +824,22 @@ export class OrderDetailsComponent implements OnInit {
                 billingComments,
                 invoiceComments,
             };
+            console.log('--DEBUG-- validation winder: ', updateObj);
+
+            let validation = this.ordersService.validation(updateObj);
+
+            if (!validation.status) {
+                this.dialog.open(ErrorDialogWindow, {
+                    data: {
+                        errorMessage: validation.message
+                    }
+                });
+
+                return;
+            }
         }
 
-        if (this.data.SectionType === 'Landing') {
+        if (sectionType === 'Landing') {
             let location = this.location.value;
 
             let landingPickup = this.orderDetailsForm.get('landingPickup')?.value;
@@ -743,6 +848,7 @@ export class OrderDetailsComponent implements OnInit {
             let landingOsmOnPickup = this.orderDetailsForm.get('landingPickupOSM')?.value;
             let landingOsmOnWrap = this.orderDetailsForm.get('landingWrapOSM')?.value;
             let landingSitsOnFloor = this.orderDetailsForm.get('langingOnFloor')?.value;
+            let landingType = this.landingTypeSelected.value;
         
             updateObj = {
                 location,
@@ -752,6 +858,7 @@ export class OrderDetailsComponent implements OnInit {
                 landingOsmOnPickup,
                 landingOsmOnWrap,
                 landingSitsOnFloor,
+                landingType,
                 sectionType,
 
                 connectedToOthers,
@@ -765,6 +872,18 @@ export class OrderDetailsComponent implements OnInit {
                 billingComments,
                 invoiceComments,
             };
+
+            let validation = this.ordersService.validation(updateObj);
+
+            if (!validation.status) {
+                this.dialog.open(ErrorDialogWindow, {
+                    data: {
+                        errorMessage: validation.message
+                    }
+                });
+
+                return;
+            }
         }
 
         try {
@@ -799,13 +918,16 @@ export class OrderDetailsComponent implements OnInit {
 
     // recalculate everything
     reCalculateEverything() {
+        this.recalculateNumberRiseOfStairs(true);
         this.recalculateRiseOfStairs(true);
-        if (!this.riseCountWasChanged) {
-            this.recalculateNumberRiseOfStairs(true);
-        }
+        
         this.recalculateRun(true);
         this.recalculateNumberTreadsOfStairs(true);
         this.recalculateHeadroomTotal(true, {});
+    }
+
+    reCalculateEverythingForWinder() {
+        console.log('--DEBUG-- recalculate everything for winder');
     }
 
     // RUN
@@ -835,20 +957,20 @@ export class OrderDetailsComponent implements OnInit {
 
     // # OF RISES
     recalculateNumberRiseOfStairs(changeInputs: boolean = false, values?:any):number {
+        let divisor = values?.divisor || this.divisor;
         let height: number = values?.height || Number(this.orderDetailsForm.get('height')?.value);
-        let rise: number = values?.rise || Number(this.orderDetailsForm.get('rise')?.value);
+        // let rise: number = values?.rise || Number(this.orderDetailsForm.get('rise')?.value);
         let riseOfStairsNum: number = 0;
 
         console.log('--DEBUG-- recalculateNumberRiseOfStairs: ', {
             height,
-            rise,
-            riseOfStairsNum
+            riseOfStairsNum,
+            divisor
         });
 
-        this.riseCountWasChanged = false;
-
         if (this.data.SectionType === 'Stair') {
-            riseOfStairsNum = Math.round(16 * height / rise) / 16;
+            // riseOfStairsNum = Math.round(16 * height / rise) / 16;
+            riseOfStairsNum = Math.ceil(height / divisor);
         }
 
         if (changeInputs) this.orderDetailsForm.get('riseCount')?.setValue(riseOfStairsNum || 0);
@@ -887,8 +1009,9 @@ export class OrderDetailsComponent implements OnInit {
         let stairType = values?.stairType || Number(this.selectedStairTypeField);
         let length = values?.lngth || Number(this.orderDetailsForm.get('length')?.value);
         let noNosing = values?.noNosing || Number(this.orderDetailsForm.get('noNosing')?.value);
+        let stairsRun = values?.stairsRun;
 
-        let treadRun: number = 0;
+        let treadRun: number = stairsRun + 1;
 
         console.log('--DEBUG-- recalculateTreadRun: ', {
             materialData,
@@ -903,7 +1026,7 @@ export class OrderDetailsComponent implements OnInit {
             noNosing
         });
 
-        if (customNumCustomTreads > 0) {
+        /* if (customNumCustomTreads > 0) {
             treadRun = winderOn3 - winderWrap;
             console.log('--DEBUG-- recalculateTreadRun 1');
         } else if (materials.includes('5/4')) {
@@ -947,7 +1070,7 @@ export class OrderDetailsComponent implements OnInit {
 
             treadRun = a + b;
             console.log('--DEBUG-- recalculateTreadRun 8');
-        }
+        } */
 
         return treadRun;
     }
@@ -960,7 +1083,8 @@ export class OrderDetailsComponent implements OnInit {
         let landingWrapOSM = values?.landing_Wrap_OSM || Number(this.currentOrder?.Landing_Wrap_OSM);
         let customNumCustomTreads = values?.customNumCustomTreads || Number(this.currentOrder?.CustomNumCustomTreads);
         let numRisers = values?.numRisers || Number(this.orderDetailsForm.get('riseCount')?.value);
-    
+        console.log('--DEBUG-- numRisers: ', numRisers);
+
         console.log('--DEBUG-- hght: ', this.orderDetailsForm.get('height')?.value);
 
         console.log('--DEBUG-- Recalculate Rise Of Stairs: ', {
@@ -976,8 +1100,10 @@ export class OrderDetailsComponent implements OnInit {
 
         if (customWindersType > 0) {
             if (customNumCustomTreads > 0) {
+                console.log('--DEBUG-- riseOfStairs!!! 1');
                 riseOfStairs = this.roundTo(16 * height / customNumCustomTreads, 3) / 16;
             } else {
+                console.log('--DEBUG-- riseOfStairs!!! 2');
                 this.roundTo(
                     height / (
                         Math.ceil(height / divisor)
@@ -986,11 +1112,14 @@ export class OrderDetailsComponent implements OnInit {
                 );
             }
         } else if (landingWrapOSM > 0) {
+            console.log('--DEBUG-- riseOfStairs!!! 3');
             riseOfStairs = 0;
         } else {
-            if (numRisers > 0 && this.riseCountWasChanged) {
-                riseOfStairs = this.roundTo(16 * height / numRisers, 3) / 16;
+            if (numRisers > 0) {
+                console.log('--DEBUG-- riseOfStairs!!! 4: ', numRisers);
+                riseOfStairs = Math.round(16 * height / numRisers) / 16;
             } else {
+                console.log('--DEBUG-- riseOfStairs!!! 5', divisor);
                 riseOfStairs = this.roundTo(
                     height / (
                         Math.ceil(height / divisor)
@@ -1000,11 +1129,14 @@ export class OrderDetailsComponent implements OnInit {
             }
         }
 
+        console.log('--DEBUG-- riseOfStairs total!!! ', riseOfStairs);
+
         if (changeInputs) return this.orderDetailsForm.get('rise')?.setValue(riseOfStairs || 0);
 
         return riseOfStairs || 0;
     }
 
+    // NEW HEIGHT
     recalculateNewHeight(values?:any) {
         let height: number = values?.height || Number(this.orderDetailsForm.get('height')?.value);
         let numRisers = values?.numRisers || Number(this.orderDetailsForm.get('riseCount')?.value);
@@ -1021,7 +1153,7 @@ export class OrderDetailsComponent implements OnInit {
         let newHeight: number = values?.newHeight;
         let heightDifference:number = 0;
 
-        if (newHeight > 0) heightDifference = height - newHeight;
+        if (newHeight > 0) heightDifference = Math.round(1000 * (newHeight - height)) / 1000;
         else heightDifference = 0;
 
         return heightDifference;
@@ -1059,15 +1191,29 @@ export class OrderDetailsComponent implements OnInit {
         let custGarage = values?.custGarage || Number(this.orderDetailsForm.get('custGarage')?.value);
         let custAdj1 = values?.custAdj1 || Number(this.orderDetailsForm.get('custStyle1Adj')?.value);
         let custAdj2 = values?.custAdj2 || Number(this.orderDetailsForm.get('custStyle2Adj')?.value);
-        
+
+        console.log('--DEBUG-- recalculateOSM values: ', {
+            stairStyle,
+            stairType,
+            width,
+            custDeck,
+            custGarage,
+            custAdj1,
+            custAdj2
+        });
+
         let osm: number = 0;
 
-        if (stairType === 2) osm = width - custGarage;
-        else if (stairType === 3) osm = width - custDeck;
-        else if (stairStyle === 1) osm = width - custAdj1;
-        else if (stairStyle === 2) osm = width - custAdj2;
-        else if (stairStyle === 3) osm = width;
-        else osm = width - 1.25;
+        if (stairType === 2) osm = width - custGarage; // Garage
+        else if (stairType === 3) osm = width - custDeck; // Deck
+        else {
+            if (stairStyle === 1) osm = width - custAdj1;
+            else if (stairStyle === 2) osm = width - custAdj2;
+            else if (stairStyle === 3) osm = width;
+            else osm = width - 1.25;
+        }
+
+        console.log('--DEBUG-- recalculateOSM osm: ', osm);
 
         return osm;
     };
@@ -1149,6 +1295,8 @@ export class OrderDetailsComponent implements OnInit {
         if (numTreads < 0 || treadRun < 0) oneInch = 0;
         else oneInch = Math.round(4 * (numTreads * treadRun * treadWidth / 144)) / 4;
 
+        if (oneInch < 0) oneInch = 0;
+
         return oneInch;
     }
 
@@ -1161,10 +1309,12 @@ export class OrderDetailsComponent implements OnInit {
         let osm = values.osm;
         let halfInch: number = 0;
 
-        if (numRisers > 0) halfInch = Math.round(4 * (numRisers * riserWidth * rise) / 144) / 4;
-        else halfInch = Math.round(4 * (0 + (adjBottom * riserWidth) + (adjTop * osm)) / 144) /  4;
+        if (numRisers > 0) halfInch = riserWidth * numRisers * rise;
+        else halfInch = (adjBottom * riserWidth) + (adjTop * osm);
 
-        return halfInch;
+        console.log('--DEBUG-- halfInch after: ', halfInch);
+
+        return Math.round(4 * (halfInch / 144)) / 4;
     }
 
     recalculateTwoByTen(values: any, method: string) {
@@ -1193,6 +1343,8 @@ export class OrderDetailsComponent implements OnInit {
 
         twoTen = this.roundTo(treadMat + stringerMat, 3);
 
+        if (twoTen < 0) twoTen = 0;
+        
         return twoTen;
     }
 
@@ -1204,6 +1356,8 @@ export class OrderDetailsComponent implements OnInit {
 
         if (stairType === 3) twoBySix = this.roundTo(treadWidth * 2 * numTreads / 12, 3);
         else twoBySix = 0;
+
+        if (twoBySix < 0) twoBySix = 0;
 
         return twoBySix;
     }
@@ -1229,7 +1383,11 @@ export class OrderDetailsComponent implements OnInit {
             mat = angle * (stringers - 2);
         };
 
-        return this.roundTo(mat, 3);
+        mat = this.roundTo(mat, 3);
+
+        if (mat < 0) mat = 0;
+
+        return mat;
     }
 
     recalculateNumStringers(values: any, method: string) {
@@ -1307,19 +1465,15 @@ export class OrderDetailsComponent implements OnInit {
     recalculateAccuratelyForOneMethod(method: string, divisor: number) {
         let numRisers: number;
 
-        let riseOfStairs = this.recalculateRiseOfStairs(false, {divisor});
+        numRisers = this.recalculateNumberRiseOfStairs(false, {
+            divisor,
+        });
 
-        if (!this.riseCountWasChanged) {
-            numRisers = this.recalculateNumberRiseOfStairs(false, {
-                rise: riseOfStairs,
-            });
-        } else {
-            numRisers = Number(this.orderDetailsForm.get('riseCount')?.value);
-        }
-        
+        let riseOfStairs = this.recalculateRiseOfStairs(false, {divisor, numRisers});
+
         let run = this.recalculateRun(false, {numRisers});
 
-        let treadRun = this.recalculateTreadRun({numRisers});
+        let treadRun = this.recalculateTreadRun({numRisers, stairsRun: run});
 
         let newHeight = this.recalculateNewHeight({numRisers});
 
@@ -1442,13 +1596,13 @@ export class OrderDetailsComponent implements OnInit {
         let data: any = {};
 
         data = {
-            blurb_left_bullnose: this.data.blurb_left_bullnose,
-            blurb_right_bullnose: this.data.blurb_right_bullnose,
-            blurb_left_flair: this.data.blurb_left_flair,
-            blurb_right_flair: this.data.blurb_right_flair
+            blurb_left_bullnose: this.data.blurb_left_bullnose || (this.blurb_left_bullnose && this.blurb_left_bullnose.split('_')[0]),
+            blurb_right_bullnose: this.data.blurb_right_bullnose || (this.blurb_right_bullnose && this.blurb_right_bullnose.split('_')[0]),
+            blurb_left_flair: this.data.blurb_left_flair || (this.blurb_left_flair && this.blurb_left_flair.split('_')[0]),
+            blurb_right_flair: this.data.blurb_right_flair || (this.blurb_right_flair && this.blurb_right_flair.split('_')[0])
         }
 
-        const dlg = this.dialog.open(SelectImageDetail, {
+        const dlg = this.dialog.open(SelectStairShapeDetail, {
             data: {
                 ...data
             }
@@ -1486,6 +1640,8 @@ export class OrderDetailsComponent implements OnInit {
             let d: number = this.methodsData[v.value];
             let methodName: string = `method${i + 1}`;
             let calculatedObj = this.recalculateAccuratelyForOneMethod(v.value, d);
+
+            console.log('--DEBUG-- calculatedObj: ', calculatedObj);
 
             data[methodName] = {
                 'Rise of Stair': calculatedObj.riseOfStairs,
@@ -1568,8 +1724,10 @@ export class OrderDetailsComponent implements OnInit {
 
     addBullnoseAndFlairImages(imgs: any) {
         let imagesFromServer = this.data.Images.filter((i: any) => {
-            return !i.type.includes('Flair') || !i.type.includes('Bull');
+            return !i.type.includes('Flair') && !i.type.includes('Bull') && !i.type.includes('StairType');
         });
+
+        console.log('--DEBUG-- addBullnoseAndFlairImages: ', imagesFromServer);
 
         this.imgs$.next([...imagesFromServer, ...imgs]);
     }
@@ -1594,6 +1752,8 @@ export class OrderDetailsComponent implements OnInit {
             let customerValue: any = this.location.value;
             let materialElem = this.orderDetailsForm.get('materials');
 
+            this.materialFields = this.materialFieldsData;
+
             switch (customerValue?.viewValue) {
                 case 'PWF Deck': {
                     materialElem?.setValue('pwf treads, pwf stringers');
@@ -1611,14 +1771,36 @@ export class OrderDetailsComponent implements OnInit {
                     break;
                 };
 
+                case 'Deck': {
+                    this.orderDetailsForm.get('materials')?.setValue('pwf treads, pwf stringers');
+                    this.selectedStairTypeField = '3';
+
+                    this.materialsDisabled = true;
+                    this.selectedMaterialsField = '3';
+                
+                    break;
+                };
+
                 case 'Garage': {
-                    this.orderDetailsForm.get('materials')?.setValue('plywood tread, spruce stingers');
+                    this.orderDetailsForm.get('materials')?.setValue('spruce treads, spruce stringers');
                     this.selectedStairTypeField = '2';
+                    this.selectedRiserTypeField = '2';
                     this.garage$.next(true);
 
                     this.materialsDisabled = false;
-                    this.selectedMaterialsField = '1';
+                    this.selectedMaterialsField = '2';
                 
+                    this.materialFields = [
+                        {
+                            value: '2',
+                            viewValue: 'spruce treads, spruce stringers'
+                        },
+                        {
+                            value: '7',
+                            viewValue: '5/4\" pwf treads, pwf stringers'
+                        }
+                    ];
+
                     break;
                 };
 
@@ -1662,15 +1844,33 @@ export class OrderDetailsComponent implements OnInit {
             return;
         } 
 
-        if (e.target.id === 'riseCount') {
+        /* if (e.target.id === 'riseCount') {
             let numberRiseOfStairs = Number(this.orderDetailsForm.get('riseCount')?.value);
             
             if (Number(numberRiseOfStairs) !== Number(e.target.value)) this.riseCountWasChanged = true;
-        }
+        } */
 
         this.orderDetailsForm.get(e.target.id)?.setValue(Number(eval(e.target.value)).toFixed(3));
 
-        this.reCalculateEverything();
+        const sectionTypeFormField = this.orderDetailsForm.get('sectionType');
+
+        if (sectionTypeFormField?.value === 'Stair') {
+            this.reCalculateEverything();
+        }
+
+        if (sectionTypeFormField?.value === 'Winder') {
+            this.reCalculateEverythingForWinder();
+        }
+    }
+
+    landingFieldChanged(e: any) {
+        console.log('--DEBUG-- number input changed: ', e.target.value);
+        if (!e.target.value) {
+            this.orderDetailsForm.get(e.target.id)?.setValue(0);
+            return;
+        } 
+
+        this.orderDetailsForm.get(e.target.id)?.setValue(Number(eval(e.target.value)).toFixed(3));
     }
 
     methodChanged(e: any) {
@@ -1755,9 +1955,49 @@ export class OrderDetailsComponent implements OnInit {
     }
 
     changeFields(e: any) {
-        this.orderDetailsForm.get('sectionType')?.setValue(this.selectedSectionTypeField);
-        console.log('--DEBUG-- select was changed ', this.orderDetailsForm.get('sectionType')?.value);
-        this.sectionType$.next(this.orderDetailsForm.get('sectionType')?.value || '');
+        const sectionTypeFormField = this.orderDetailsForm.get('sectionType');
+
+        sectionTypeFormField?.setValue(this.selectedSectionTypeField);
+        console.log('--DEBUG-- select was changed ', sectionTypeFormField?.value);
+        this.sectionType$.next(sectionTypeFormField?.value || '');
+
+        if (sectionTypeFormField?.value === 'Stair') {
+            this.orderDetailsForm.get('riseCount')?.disable();
+        }
+
+        if (sectionTypeFormField?.value === 'Winder') {
+            this.orderDetailsForm.get('riseCount')?.enable();
+        }
+    }
+    
+    changeWinderType(e: any) {
+        console.log('--DEBUG-- changeWinderType: ', this.winderTypeSelected.value);
+        console.log('--DEBUG-- this.winderTypeImages: ', this.winderTypeImages);
+
+        let selectedImage = this.winderTypeImages.find((img: any) => {
+            return img.ImageText === this.winderTypeSelected.value;
+        })
+
+        this.addBullnoseAndFlairImages([{
+            id: 0,
+            img: selectedImage.Image,
+            type: 'StairType'
+        }]);
+    }
+
+    changeLandingType(e: any) {
+        console.log('--DEBUG-- changeLandingType: ', this.landingTypeSelected.value);
+        console.log('--DEBUG-- this.landingTypeImages: ', this.landingTypeImages);
+
+        let selectedImage = this.landingTypeImages.find((img: any) => {
+            return img.ImageText === this.landingTypeSelected.value;
+        })
+
+        this.addBullnoseAndFlairImages([{
+            id: 0,
+            img: selectedImage.Image,
+            type: 'StairType'
+        }]);
     }
 
         // Handler for file input change

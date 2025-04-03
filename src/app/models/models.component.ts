@@ -160,6 +160,8 @@ export class ModelsComponent {
             this.total = models?.total || 0;
     
             this.dataSource = new MatTableDataSource(models?.data || []);
+            /* this.dataSource.paginator = this.paginator;
+            this.dataSource.sort = this.sort; */
         } catch (err: any) {
             this.loading$.next(false);
             this.dialog.open(ErrorDialogWindow, {
@@ -168,11 +170,6 @@ export class ModelsComponent {
                 }
             });
         }
-    }
-
-    ngAfterViewInit() {
-        this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
     }
 
     handlePageEvent(e: PageEvent) {

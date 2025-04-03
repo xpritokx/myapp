@@ -21,6 +21,7 @@
     "@angular/platform-browser-dynamic": "^19.0.0",
     "@angular/router": "^19.0.0",
     "@ngrx/store": "^19.0.0",
+    "@swimlane/ngx-charts": "^22.0.0-alpha.1",
     "downloadjs": "^1.4.7",
     "ngx-device-detector": "^9.0.0",
     "pdf-lib": "^1.17.1",

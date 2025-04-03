@@ -180,6 +180,8 @@ export class CustomerComponent {
             this.total = customers?.total || 0;
     
             this.dataSource = new MatTableDataSource(customers?.data || []);
+            /* this.dataSource.paginator = this.paginator;
+            this.dataSource.sort = this.sort; */
             this.customers = customers?.data || [];
         } catch (err: any) {
             this.loading$.next(false);
@@ -229,11 +231,6 @@ export class CustomerComponent {
         });
     }
 
-    ngAfterViewInit() {
-        this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
-    }
-
     handlePageEvent(e: PageEvent) {
         console.log('--DEBUG-- handlePageEvent: ', e);
         this.pageSize = e.pageSize;
@@ -244,16 +241,6 @@ export class CustomerComponent {
 
     sortData(sort: Sort) {
         console.log('--DEBUG-- sort customers button: ', sort);
-
-        /* if (this.sortingColumn == sort.active) {
-            this.sortingDirection = this.sortingDirection == 'asc' ? 'desc' : 'asc';
-        } else {
-            this.sortingDirection = 'asc';
-        }
-
-        this.sortingColumn = sort.active;
-
-        this.getOrders(); */
     };
 
     add() {

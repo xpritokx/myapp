@@ -46,14 +46,26 @@
                     </mat-autocomplete>
                 </mat-form-field>
 
-                <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-location details-width">    
+                <!-- <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-location details-width">    
                     <mat-label for="sectionDesc">Landing Type</mat-label>
                     <input id="sectionDesc" matInput type="text" formControlName="sectionDesc" placeholder="Ex. 27230" />
-                </mat-form-field>
+                </mat-form-field> -->
 
-                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-length">
-                    <mat-label for="length">Length</mat-label>
-                    <input id="length" (change)="numberFieldChanged($event)" matInput type="text" formControlName="length" placeholder="Ex. 27230" />
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-landing-type details-width">
+                    <mat-label>Landing Type</mat-label>
+                    <div class="landing-type">
+                      <mat-select 
+                        [formControl]="landingTypeSelected"
+                        (selectionChange)="changeLandingType($event)"
+                      >
+                        @for (img of landingTypeImages; track img) {
+                          <mat-option [value]="img.ImageText">
+                            <img width="150" src="{{ img.Image }}" />
+                            {{ img.ImageText }}
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </div>
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-height">
@@ -64,6 +76,11 @@
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-width">
                     <mat-label for="width">Width</mat-label>
                     <input id="width" (change)="numberFieldChanged($event)" matInput type="text" formControlName="width" placeholder="Ex. 27230" />
+                </mat-form-field>
+
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-length">
+                    <mat-label for="length">Length</mat-label>
+                    <input id="length" (change)="numberFieldChanged($event)" matInput type="text" formControlName="length" placeholder="Ex. 27230" />
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-run">
@@ -86,7 +103,7 @@
                     <input id="riseCount" (change)="numberFieldChanged($event)" matInput type="text" formControlName="riseCount" placeholder="Ex. 27230" />
                 </mat-form-field>
 
-                <mat-form-field *ngIf="(sectionType$ | async) !== 'Landing'" class="order-details-treads-count">
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'" class="order-details-treads-count">
                     <mat-label for="treadsCount"># of Treads</mat-label>
                     <input id="treadsCount" (change)="numberFieldChanged($event)" matInput type="text" formControlName="treadsCount" placeholder="Ex. 27230" />
                 </mat-form-field>
@@ -105,9 +122,26 @@
                     </select>
                 </mat-form-field>
 
-                <mat-form-field *ngIf="(sectionType$ | async) === 'Winder'" class="order-details-type">
+                <!-- <mat-form-field *ngIf="(sectionType$ | async) === 'Winder'" class="order-details-type">
                     <mat-label for="sectionDesc">Winder Type</mat-label>
                     <input id="sectionDesc" matInput type="text" formControlName="sectionDesc" placeholder="Ex. 1'Ply" />
+                </mat-form-field> -->
+
+                <mat-form-field *ngIf="(sectionType$ | async) === 'Winder'" class="order-winder-type" appearance="fill">
+                    <mat-label>Winder Type</mat-label>
+                    <div class="winder-type">
+                      <mat-select 
+                        [formControl]="winderTypeSelected"
+                        (selectionChange)="changeWinderType($event)"
+                      >
+                        @for (img of winderTypeImages; track img) {
+                          <mat-option [value]="img.ImageText">
+                            <img width="150" src="{{ img.Image }}" />
+                            {{ img.ImageText }}
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </div>
                 </mat-form-field>
 
                 <mat-form-field class="order-details-method" *ngIf="(sectionType$ | async) === 'Stair'">
@@ -126,7 +160,7 @@
                 </mat-form-field>
 
                 <div *ngIf="(sectionType$ | async) === 'Stair'" id="show-methods-info">
-                    <mat-icon aria-hidden="false" aria-label="Stair shape" (click)="selectStairShape()" fontIcon="add_circle">add_circle</mat-icon>
+                    <mat-icon aria-hidden="false" matTooltip="Select stair shape" aria-label="Stair shape" (click)="selectStairShape()" fontIcon="add_circle">add_circle</mat-icon>
                 </div>
 
                 <mat-form-field *ngIf="(sectionType$ | async) !== 'Landing'">
@@ -159,7 +193,7 @@
                 </mat-form-field>
 
                 <div *ngIf="(sectionType$ | async) === 'Stair'" id="show-methods-info">
-                    <mat-icon aria-hidden="false" aria-label="Methods info" (click)="showMethodsInfo()" fontIcon="info">info</mat-icon>
+                    <mat-icon matTooltip="Methods Info" aria-hidden="false" aria-label="Methods info" (click)="showMethodsInfo()" fontIcon="info">info</mat-icon>
                 </div>
 
                 <div *ngIf="(sectionType$ | async) === 'Stair'">
@@ -177,6 +211,8 @@
                     formControlName="noNosing">No Nosing</mat-checkbox>
                     <mat-checkbox id="furred" class="order-details-furred" color="primary"
                     formControlName="furred">3rd and Furred</mat-checkbox>
+                    <mat-checkbox id="third" class="order-details-third" color="primary"
+                    formControlName="third">3rd Stringer</mat-checkbox>
                 </div>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Stair'">
@@ -254,27 +290,27 @@
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-landing-pickup">
                     <mat-label for="landingPickup">Pickup</mat-label>
-                    <input id="landingPickup" matInput type="text" formControlName="landingPickup" placeholder="Ex. 0" />
+                    <input id="landingPickup" (change)="landingFieldChanged($event)" matInput type="text" formControlName="landingPickup" placeholder="Ex. 0" />
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-landing-wrap">
                     <mat-label for="landingWrap">Wrap +1"Nosing</mat-label>
-                    <input id="landingWrap" matInput type="text" formControlName="landingWrap" placeholder="Ex. 0" />
+                    <input id="landingWrap" (change)="landingFieldChanged($event)" matInput type="text" formControlName="landingWrap" placeholder="Ex. 0" />
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-landing-seat">
                     <mat-label for="landingSeat">Seat</mat-label>
-                    <input id="landingSeat" matInput type="text" formControlName="landingSeat" placeholder="Ex. 0" />
+                    <input id="landingSeat" (change)="landingFieldChanged($event)" matInput type="text" formControlName="landingSeat" placeholder="Ex. 0" />
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-landing-pickup-osm">
                     <mat-label for="landingPickupOSM">OSM on Pickup</mat-label>
-                    <input id="landingPickupOSM" matInput type="text" formControlName="landingPickupOSM" placeholder="Ex. 0" />
+                    <input id="landingPickupOSM" (change)="landingFieldChanged($event)" matInput type="text" formControlName="landingPickupOSM" placeholder="Ex. 0" />
                 </mat-form-field>
 
                 <mat-form-field *ngIf="(sectionType$ | async) === 'Landing'" class="order-details-landing-wrap-osm">
                     <mat-label for="landingWrapOSM">OSM on Wrap</mat-label>
-                    <input id="landingWrapOSM" matInput type="text" formControlName="landingWrapOSM" placeholder="Ex. 0" />
+                    <input id="landingWrapOSM" (change)="landingFieldChanged($event)" matInput type="text" formControlName="landingWrapOSM" placeholder="Ex. 0" />
                 </mat-form-field>
 
                 <div *ngIf="(sectionType$ | async) === 'Landing'">

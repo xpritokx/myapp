@@ -17,9 +17,27 @@
     cursor: pointer;
 }
 
+.edit-order-advanced-btn {
+    right: 220px;
+    top: 20px;
+    position: absolute;
+}
+
+.edit-order-advanced-btn-mobile {
+    right: 70px;
+    top: 70px;
+    position: absolute;
+}
+
 .edit-order-status-btn {
     right: 170px;
     top: 20px;
+    position: absolute;
+}
+
+.edit-order-status-btn-mobile {
+    right: 20px;
+    top: 70px;
     position: absolute;
 }
 

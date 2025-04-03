@@ -255,7 +255,19 @@ export class OrdersComponent {
             this.loading$.next(false);
             this.total = orders?.total || 0;
 
+            orders.data = orders.data.map((ordr)=> {
+                if (!ordr.ShipStatus) ordr.ShipStatus = 'Not Shipped';
+                
+                return ordr;
+            });
+
             this.dataSource = new MatTableDataSource(orders?.data || []);
+            //console.log('--DEBUG-- this.dataSource.paginator: ', this.dataSource.paginator);
+
+            /* if (!this.dataSource.paginator) {
+                this.dataSource.paginator = this.paginator;
+                this.dataSource.sort = this.sort;
+            } */
         } catch (err: any) {
             this.loading$.next(false);
             this.dialog.open(ErrorDialogWindow, {
@@ -279,11 +291,6 @@ export class OrdersComponent {
                 this.getOrders();
             }
         });
-    }
-
-    ngAfterViewInit() {
-        this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
     }
 
     handlePageEvent(e: PageEvent) {

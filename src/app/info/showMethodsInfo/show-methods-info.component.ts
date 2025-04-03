@@ -128,7 +128,7 @@ export class ShowMethodsInfoDialog {
     dataColumnsMaterials: any[] = [
       ['1" Material', 0, 0, 0],
       ['1/2" Material', 0, 0, 0],
-      ['2x10', -1, -1, 0],
+      ['2x10', 0, 0, 0],
       ['2x6', 0, 0, 0],
       ['2x12', 0, 0, -1.5],
     ];
@@ -217,10 +217,10 @@ export class ShowMethodsInfoDialog {
               dataColumn[3] = data?.method3['# of Treads'] || dataColumn[3];
             }
     
-            if (valueName === 'Bottom Risers (rise)') {
-              dataColumn[1] = data?.method1['Bottom Risers (rise)'] || dataColumn[1];
-              dataColumn[2] = data?.method2['Bottom Risers (rise)'] || dataColumn[2];
-              dataColumn[3] = data?.method3['Bottom Risers (rise)'] || dataColumn[3];
+            if (valueName === 'Bottom Riser (rise)') {
+              dataColumn[1] = data?.method1['Bottom Riser (rise)'] || dataColumn[1];
+              dataColumn[2] = data?.method2['Bottom Riser (rise)'] || dataColumn[2];
+              dataColumn[3] = data?.method3['Bottom Riser (rise)'] || dataColumn[3];
             }
     
             if (valueName === 'Adjusted Bottom Rise') {
@@ -229,10 +229,10 @@ export class ShowMethodsInfoDialog {
               dataColumn[3] = data?.method3['Adjusted Bottom Rise'] || dataColumn[3];
             }
     
-            if (valueName === 'Top Risers (rise)') {
-              dataColumn[1] = data?.method1['Top Risers (rise)'] || dataColumn[1];
-              dataColumn[2] = data?.method2['Top Risers (rise)'] || dataColumn[2];
-              dataColumn[3] = data?.method3['Top Risers (rise)'] || dataColumn[3];
+            if (valueName === 'Top Riser (rise)') {
+              dataColumn[1] = data?.method1['Top Riser (rise)'] || dataColumn[1];
+              dataColumn[2] = data?.method2['Top Riser (rise)'] || dataColumn[2];
+              dataColumn[3] = data?.method3['Top Riser (rise)'] || dataColumn[3];
             }
     
             if (valueName === 'Adjusted Top Rise') {

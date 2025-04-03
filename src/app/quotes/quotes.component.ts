@@ -222,6 +222,8 @@ export class QuotesComponent {
             this.total = quotes?.total || 0;
 
             this.dataSource = new MatTableDataSource(quotes?.data || []);
+            /* this.dataSource.paginator = this.paginator;
+            this.dataSource.sort = this.sort; */
         } catch (err: any) {
             this.loading$.next(false);
             this.dialog.open(ErrorDialogWindow, {
@@ -248,11 +250,6 @@ export class QuotesComponent {
                 this.getQuotes();
             }
         });
-    }
-
-    ngAfterViewInit() {
-        this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
     }
 
     handlePageEvent(e: PageEvent) {
